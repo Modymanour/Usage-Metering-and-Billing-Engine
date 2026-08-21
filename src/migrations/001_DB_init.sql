@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TYPE subscription_status AS ENUM ('active', 'cancelled', 'expired');
@@ -46,5 +44,3 @@ CREATE TABLE IF NOT EXISTS stripe_events (
     event_type   VARCHAR(100) NOT NULL,
     stripe_id    VARCHAR(255) NOT NULL UNIQUE
 );
-
-COMMIT;

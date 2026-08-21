@@ -2,7 +2,9 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'node:path';
 
-dotenv.config({ path: path.resolve(__dirname, '../config/.env') });
+
+const directoryPath = import.meta.dirname
+dotenv.config({ path: path.resolve(directoryPath, '../config/.env') });
 
 const connectionString = process.env.POSTGRESQL_CONNECTION_STRING;
 
