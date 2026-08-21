@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { PoolClient } from 'pg';
 import { Umzug } from 'umzug';
 import type { UmzugStorage } from 'umzug';
-import pool from './pool';
+import { pool } from './pool';
 
 type MigrationContext = {
     client: PoolClient;
