@@ -63,6 +63,8 @@ src/
 
 ## Database Schema
 
+<img width="1502" height="772" alt="Usage-Metering-and-Billing-Engine ERD drawio" src="https://github.com/user-attachments/assets/16b84f11-9a84-488c-b44f-5145700d7c55" />
+
 
 ## Tests
 
