@@ -82,4 +82,18 @@ export class PlansRepository{
         );
         return row!;
     }
+    //Get by name
+    async findByName(
+        db:Queryable,
+        name:string
+    ): Promise<PlanRow>{
+        const row = await queryOne<PlanRow>(
+            db,
+            `SELECT ${PLANCOLUMNS}
+            FROM plans
+            WHERE LOWER(plan_name) = $1`,
+            [name.toLocaleLowerCase()]
+        );
+        return row!;
+    }
 }

@@ -22,9 +22,15 @@ export class TenantsService {
         private readonly db: Queryable = pool
     ) {}
 
-    async create(input: { name: string }): Promise<TenantRow> {
+    async create(
+        input:{ 
+          name: string,
+          email: string,
+          password: string
+        }
+    ): Promise<TenantRow> {
         const name = this.validateName(input.name);
-        const tenant = await this.tenantsRepository.create(this.db, name);
+        const tenant = await this.tenantsRepository.create(this.db, input);
 
         if (!tenant) {
             throw new Error('Tenant was not created');
