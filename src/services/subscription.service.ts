@@ -86,7 +86,7 @@ export class SubscriptionService {
         return new_subscription;
     }
 
-    async deactivate_subscription(
+    async change_subscription_status(
         input:{
             sub_id: UUID,
             new_state: SubscriptionStatus,

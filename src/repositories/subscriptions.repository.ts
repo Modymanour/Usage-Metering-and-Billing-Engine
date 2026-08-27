@@ -106,4 +106,22 @@ export class SubscriptionRepository{
         )
         return row;
     }
+    async findByTenantId(
+        db:Queryable,
+        tenant_Id:UUID
+    ): Promise<SubscriptionRow | undefined>{
+        const row = await queryOne<SubscriptionRow>(
+            db,
+            `SELECT s.*
+             FROM subscriptions s
+             WHERE s.tenant_id = $1
+                AND s.sub_status = 'active'
+                AND NOW() >= s.start_from
+                AND NOW() < s.ends_at
+             ORDER BY s.start_from DESC
+             LIMIT 1`,
+            [tenant_Id]
+        )
+        return row!;
+    }
 }

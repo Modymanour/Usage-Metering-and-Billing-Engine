@@ -30,7 +30,7 @@ export class TenantsService {
         }
     ): Promise<TenantRow> {
         const name = this.validateName(input.name);
-        const tenant = await this.tenantsRepository.create(this.db, input);
+        const tenant = await this.tenantsRepository.create(this.db, { ...input, name });
 
         if (!tenant) {
             throw new Error('Tenant was not created');
