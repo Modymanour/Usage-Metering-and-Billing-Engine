@@ -10,7 +10,7 @@ import { FakeDb, lastCall } from './helpers';
 const id = '00000000-0000-0000-0000-000000000001' as `${string}-${string}-${string}-${string}-${string}`;
 const row = { id };
 
-test('plans repository creates, reads, and updates with correct SQL', async () => {
+test('plans repository creates, reads, updates, and deletes with correct SQL', async () => {
     const db = new FakeDb();
     const repository = new PlansRepository();
     db.queue(row); await repository.create(db, { name: 'Free', api_call_limit: 10, api_token_limit: 20 });
@@ -20,6 +20,8 @@ test('plans repository creates, reads, and updates with correct SQL', async () =
     assert.deepEqual(lastCall(db).values, ['free']);
     db.queue(row); await repository.update(db, { id, name: null, api_call_limit: 30, api_token_limit: null });
     assert.match(lastCall(db).text, /plan_name\s*=.*api_call_limit.*,/s);
+    db.queue(); await repository.remove_plan(db, id);
+    assert.deepEqual(lastCall(db).values, [id]);
 });
 
 test('tenant, subscription, usage, and Stripe repositories pass parameters and return rows', async () => {
@@ -39,7 +41,7 @@ test('tenant, subscription, usage, and Stripe repositories pass parameters and r
     db.queue(row); await usage.getCurrentQuota(db, id, 'api_call');
     assert.match(lastCall(db).text, /AS start_from/);
     assert.match(lastCall(db).text, /AS end_at/);
-    db.queue(row); db.queue(row); await usage.getUsageSummary(db, id);
+    db.queue(row, row); await usage.getUsageSummary(db, id);
     assert.deepEqual(db.calls.slice(-2).map((call) => call.values), [[id, 'api_token'], [id, 'api_call']]);
     db.queue(row); await stripe.findByStripeId(db, 'evt_1');
     assert.deepEqual(lastCall(db).values, ['evt_1']);
