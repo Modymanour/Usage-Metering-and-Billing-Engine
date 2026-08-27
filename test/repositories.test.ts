@@ -41,7 +41,7 @@ test('tenant, subscription, usage, and Stripe repositories pass parameters and r
     db.queue(row); await usage.getCurrentQuota(db, id, 'api_call');
     assert.match(lastCall(db).text, /AS start_from/);
     assert.match(lastCall(db).text, /AS end_at/);
-    db.queue(row, row); await usage.getUsageSummary(db, id);
+    db.queue(row); db.queue(row); await usage.getUsageSummary(db, id);
     assert.deepEqual(db.calls.slice(-2).map((call) => call.values), [[id, 'api_token'], [id, 'api_call']]);
     db.queue(row); await stripe.findByStripeId(db, 'evt_1');
     assert.deepEqual(lastCall(db).values, ['evt_1']);
