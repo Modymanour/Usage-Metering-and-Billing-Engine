@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS plans (
 CREATE TABLE IF NOT EXISTS subscriptions (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id    UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-    plan_id      UUID NOT NULL REFERENCES plans(id) ON DELETE SET NULL,
+    plan_id      UUID NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     sub_status   subscription_status NOT NULL DEFAULT 'active',
     start_from   TIMESTAMPTZ NOT NULL,
