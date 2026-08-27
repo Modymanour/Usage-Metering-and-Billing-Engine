@@ -9,6 +9,31 @@ export interface UsageEventRow {
     event_type: string,
     quantity: number
 }
+export interface QuotaRow{
+    tenant_id: UUID,
+    subscription_id: UUID,
+    plan_id: UUID,
+    plan_name: string,
+    limit: number,
+    used: number,
+    event_type: string,
+    start_from: Date,
+    end_at: Date
+}
+
+interface UsageSummaryRow {
+    apiCalls: {
+        used: number;
+        limit: number;
+        remaining: number;
+    };
+
+    aiTokens: {
+        used: number;
+        limit: number;
+        remaining: number;
+    };
+}
 
 const USAGE_EVENT_COLUMNS = `
     id, tenant_id, created_at, idempotency_key, event_type, quantity`;
@@ -91,5 +116,78 @@ export class UsageEventsRepository {
             [tenant_id, idempotency_key]
         );
         return row!;
+    }
+
+    async getCurrentQuota(
+        db: Queryable,
+        tenant_id: UUID,
+        event_type: string
+    ): Promise<QuotaRow | undefined>{
+        const quota = await queryOne<QuotaRow>(
+            db,
+            `SELECT
+                s.tenant_id,
+                s.id AS subscription_id,
+                p.id AS plan_id,
+                p.plan_name,
+                CASE $2
+                    WHEN 'api_call' THEN p.api_call_limit
+                    WHEN 'api_token' THEN p.api_token_limit
+                END AS limit,
+                COALESCE(SUM(e.quantity), 0)::integer AS used,
+                $2 AS event_type,
+                s.start_from AS start_from,
+                s.ends_at AS end_at
+            FROM subscriptions s
+            JOIN plans p ON p.id = s.plan_id
+            LEFT JOIN user_events e
+                ON e.tenant_id = s.tenant_id
+                AND e.event_type = $2
+                AND e.created_at >= s.start_from
+                AND e.created_at < s.ends_at
+            WHERE s.tenant_id = $1
+                AND s.sub_status = 'active'
+                AND NOW() >= s.start_from
+                AND NOW() < s.ends_at
+                AND $2 IN ('api_call', 'api_token')
+            GROUP BY
+                s.tenant_id,
+                s.id,
+                p.id,
+                p.plan_name,
+                p.api_call_limit,
+                p.api_token_limit,
+                s.start_from,
+                s.ends_at
+            ORDER BY s.start_from DESC
+            LIMIT 1`,
+            [tenant_id, event_type]
+        );
+
+        return quota;
+    }
+    async getUsageSummary(
+        db: Queryable,
+        tenant_id: UUID,
+    ): Promise<UsageSummaryRow | undefined>{
+        const api_tokens = await this.getCurrentQuota(db, tenant_id, "api_token")
+        const api_call = await this.getCurrentQuota(db, tenant_id, "api_call")
+
+        const api_call_usage = {
+            used: api_call?.used ?? 0,
+            limit: api_call?.limit ?? 0,
+            remaining: Math.max(0, (api_call?.limit ?? 0) - (api_call?.used ?? 0))
+        };
+        const api_tokens_usage = {
+            used: api_tokens?.used ?? 0,
+            limit: api_tokens?.limit ?? 0,
+            remaining: Math.max(0, (api_tokens?.limit ?? 0) - (api_tokens?.used ?? 0))
+        }
+        const usage = {
+            apiCalls:api_call_usage,
+            aiTokens:api_tokens_usage
+        }
+
+        return usage!;
     }
 }

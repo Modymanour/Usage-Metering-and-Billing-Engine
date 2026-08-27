@@ -68,4 +68,15 @@ src/
 
 ## Tests
 
-No automated test suite is configured yet.
+Run the unit and repository tests with:
+
+```bash
+npm test
+```
+
+Run the PostgreSQL integration flow with `TEST_DATABASE_URL` set to a database
+containing the migrations:
+
+```bash
+TEST_DATABASE_URL=postgres://postgres:dev@localhost:5432/BillingEngine npm run test:integration
+```

@@ -1,26 +1,35 @@
-import { UUID } from 'node:crypto';
-import {Queryable, query, queryOne, queryRows} from '../db/pool';
+import type { UUID } from 'node:crypto';
+import { Queryable, query, queryOne } from '../db/pool';
 
 
 export interface TenantRow{
-    name:string,
-    id: string,
-    created_At: Date
+    id: UUID,
+    display_name: string,
+    email:string,
+    created_at: Date
 }
-const TENANTCOLUMNS = "id, name, created_at";
+const TENANTCOLUMNS = "id, display_name AS name, created_at";
 
 export class TenantsRepository{
     //Creation
     async create(
         db:Queryable,
-        name:string
-    ): Promise<TenantRow>{
+        input:{
+            name:string,
+            email:string,
+            password:string
+        }
+    ): Promise<TenantRow | undefined>{
         const row = await queryOne<TenantRow>(
             db,
-            `INSERT INTO tenants (display_name) values ($1) RETURNING ${TENANTCOLUMNS}`,
-            [name]
+            `INSERT INTO tenants (display_name,email,password) values ($1,$2,$3) RETURNING ${TENANTCOLUMNS}`,
+            [
+                input.name,
+                input.email,
+                input.password
+            ]
         )
-        return row!;
+        return row;
     }
     //Update
     async update(
@@ -29,13 +38,13 @@ export class TenantsRepository{
             id: UUID,
             name: string
         }
-    ): Promise<TenantRow>{
+    ): Promise<TenantRow | undefined>{
         const row = await queryOne<TenantRow>(
            db,
-            `UPDATE tenants SET display_name = $1 WHERE id = $2 RETURING ${TENANTCOLUMNS}`,
+            `UPDATE tenants SET display_name = $1 WHERE id = $2 RETURNING ${TENANTCOLUMNS}`,
             [input.name, input.id],
         )
-        return row!;
+        return row;
     }
     //Delete
     async remove_tenant(
@@ -53,11 +62,11 @@ export class TenantsRepository{
     async findById(
         db:Queryable,
         id: UUID
-    ): Promise<TenantRow>{
+    ): Promise<TenantRow | undefined>{
         const row = await queryOne<TenantRow>(
             db,
             `SELECT ${TENANTCOLUMNS}
-             FROM tenants,
+             FROM tenants
              WHERE id = $1`,
             [id]
         )

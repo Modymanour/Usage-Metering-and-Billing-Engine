@@ -1,5 +1,5 @@
-import { UUID } from 'node:crypto';
-import {Queryable, query, queryOne, queryRows} from '../db/pool';
+import type { UUID } from 'node:crypto';
+import { Queryable, query, queryOne } from '../db/pool';
 
 export interface SubscriptionRow{
     id: UUID,
@@ -8,13 +8,13 @@ export interface SubscriptionRow{
     sub_status: string,
     created_at: Date,
     start_from: Date,
-    end_at: Date,
-    stripe_id: UUID
+    ends_at: Date,
+    stripe_id: string | null
 }
 
 const SUBSCRIPTIONCOLUMNS = `
     id, tenant_id, plan_id, sub_status, created_at, start_from,
-    end_at, stripe_id`;
+    ends_at, stripe_id`;
 
 export class SubscriptionRepository{
     //Creation
@@ -25,14 +25,14 @@ export class SubscriptionRepository{
             plan_id:UUID,
             sub_status:string,
             start_from:Date,
-            end_at:Date,
-            stripe_id:UUID
+            ends_at:Date,
+            stripe_id: string | null
         }
     ):Promise<SubscriptionRow>{
         const row = await queryOne<SubscriptionRow>(
             db,
             `INSERT INTO subscriptions (tenant_id, plan_id,
-             sub_status, start_from, end_at, stripe_id)
+             sub_status, start_from, ends_at, stripe_id)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING ${SUBSCRIPTIONCOLUMNS}`,
              [
@@ -40,7 +40,7 @@ export class SubscriptionRepository{
                 input.plan_id,
                 input.sub_status,
                 input.start_from,
-                input.end_at,
+                input.ends_at,
                 input.stripe_id
              ]
         )
@@ -55,18 +55,18 @@ export class SubscriptionRepository{
             plan_id:UUID | null,
             sub_status:string | null,
             start_from:Date | null,
-            end_at:Date | null,
-            stripe_id:UUID | null
+            ends_at:Date | null,
+            stripe_id:string | null
         }
-    ): Promise<SubscriptionRow>{
+    ):Promise<SubscriptionRow | undefined>{
         const row = await queryOne<SubscriptionRow>(
             db,
             `UPDATE subscriptions SET
-             tenant_id      = COALESCE($1, tenant_id)
-             plan_id        = COALESCE($2, plan_id)
-             sub_status     = COALESCE($3, sub_status)
-             start_from     = COALESCE($4, start_from)
-             end_at         = COALESCE($5, end_at)
+             tenant_id      = COALESCE($1, tenant_id),
+             plan_id        = COALESCE($2, plan_id),
+             sub_status     = COALESCE($3, sub_status),
+             start_from     = COALESCE($4, start_from),
+             ends_at        = COALESCE($5, ends_at),
              stripe_id      = COALESCE($6, stripe_id)
              WHERE id = $7 RETURNING ${SUBSCRIPTIONCOLUMNS}`,
              [
@@ -74,9 +74,9 @@ export class SubscriptionRepository{
                 input.plan_id ?? null,
                 input.sub_status ?? null,
                 input.start_from ?? null,
-                input.end_at ?? null,
+                input.ends_at ?? null,
                 input.stripe_id ?? null,
-                input.id ?? null
+                input.id
              ]
         )
         return row!;
@@ -96,13 +96,31 @@ export class SubscriptionRepository{
     async findById(
         db:Queryable,
         id:UUID
-    ): Promise<SubscriptionRow>{
+    ): Promise<SubscriptionRow | undefined>{
         const row = await queryOne<SubscriptionRow>(
             db,
             `SELECT ${SUBSCRIPTIONCOLUMNS}
              FROM subscriptions
              WHERE id = $1`,
              [id]
+        )
+        return row;
+    }
+    async findByTenantId(
+        db:Queryable,
+        tenant_Id:UUID
+    ): Promise<SubscriptionRow | undefined>{
+        const row = await queryOne<SubscriptionRow>(
+            db,
+            `SELECT s.*
+             FROM subscriptions s
+             WHERE s.tenant_id = $1
+                AND s.sub_status = 'active'
+                AND NOW() >= s.start_from
+                AND NOW() < s.ends_at
+             ORDER BY s.start_from DESC
+             LIMIT 1`,
+            [tenant_Id]
         )
         return row!;
     }
