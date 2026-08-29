@@ -1,20 +1,7 @@
 import type { UUID } from 'node:crypto';
 import { pool, type Queryable } from '../db/pool';
 import { TenantsRepository, type TenantRow } from '../repositories/tenants.repository';
-
-export class ValidationError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
-
-export class NotFoundError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
+import { NotFoundError, ValidationError } from "../errors/error";
 
 export class TenantsService {
     constructor(

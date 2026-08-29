@@ -3,6 +3,7 @@ import { pool, type Queryable } from '../db/pool';
 import { TenantsRepository } from '../repositories/tenants.repository';
 import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
 import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository";
+import { NotFoundError, ValidationError } from "../errors/error";
 
 
 export interface QuotaResult{
@@ -14,19 +15,6 @@ export interface QuotaResult{
     allowed: boolean
 }
 
-export class ValidationError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
-
-export class NotFoundError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
 
 export class MeterService{
     constructor(

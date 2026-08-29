@@ -3,22 +3,9 @@ import { pool, type Queryable } from '../db/pool';
 import { TenantsRepository } from '../repositories/tenants.repository';
 import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
 import { PlansRepository } from '../repositories/plans.repository';
+import { NotFoundError, ValidationError } from "../errors/error";
 
 type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
-
-export class ValidationError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
-
-export class NotFoundError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
 
 export class SubscriptionService {
     constructor(
@@ -34,6 +21,7 @@ export class SubscriptionService {
             plan_name: string,
             start_from: Date,
             ends_at: Date,
+            stripe_id: UUID | null
         }
     ): Promise<SubscriptionRow>{
         this.validatePlanName(input.plan_name);

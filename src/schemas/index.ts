@@ -37,12 +37,21 @@ export const planUpdateSchema = z.object({
 
 export const subscriptionCreateSchema = z.object({
     tenant_id: z.uuid(),
-    plan_id: z.uuid(),
-    sub_status: z.string(),
+    plan_name: z.uuid(),
     start_from: z.date(),
-    ends_at: z.date,
+    ends_at: z.date(),
     stripe_id: z.string().nullable(),
 });
+
+export const subscriptionUpdatePlanSchema = z.object({
+    sub_id: z.uuid(),
+    new_plan_name: z.string()
+})
+
+export const subscriptionChangeStatusSchema = z.object({
+    sub_id: z.uuid,
+    new_state: z.enum(['active', 'cancelled', 'expired']),
+})
 
 export const subscriptionUpdateSchema = z.object({
     id: z.uuid(),
