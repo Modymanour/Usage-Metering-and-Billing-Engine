@@ -39,12 +39,18 @@ export class TenantsService {
         return tenant;
     }
 
-    async update(id: UUID, input: { name: string }): Promise<TenantRow> {
+    async update(
+        input: 
+        { 
+          id: UUID,
+          name: string
+        }): Promise<TenantRow> {
         const name = this.validateName(input.name);
+        const id = input.id;
         const tenant = await this.tenantsRepository.update(this.db, { id, name });
 
         if (!tenant) {
-            throw new NotFoundError(`Tenant ${id} was not found`);
+            throw new NotFoundError(`Tenant ${input.id} was not found`);
         }
 
         return tenant;

@@ -60,10 +60,10 @@ export const subscriptionUpdateSchema = z.object({
 
 export const eventCreateSchema = z.object({
     tenant_id: z.uuid(),
-    idempotency_key: z.string(),
-    event_type: z.string(),
-    quantity: z.number()
-})
+    idempotency_key: z.string().trim().min(1),
+    event_type: z.enum(['api_call', 'api_token']),
+    quantity: z.number().int().min(0)
+}).strict();
 
 export const eventUpdateSchema = z.object({
     id: z.uuid(),
@@ -71,4 +71,9 @@ export const eventUpdateSchema = z.object({
     idempotency_key: z.string().nullable(),
     event_type: z.string().nullable(),
     quantity: z.number().nullable()
+})
+
+export const checkQuotaSchema = z.object({
+    tenant_id: z.uuid(),
+    type: z.enum(['api_call', 'api_token']),
 })
