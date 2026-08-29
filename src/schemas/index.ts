@@ -37,7 +37,7 @@ export const planUpdateSchema = z.object({
 
 export const subscriptionCreateSchema = z.object({
     tenant_id: z.uuid(),
-    plan_name: z.uuid(),
+    plan_name: z.string(),
     start_from: z.date(),
     ends_at: z.date(),
     stripe_id: z.string().nullable(),
