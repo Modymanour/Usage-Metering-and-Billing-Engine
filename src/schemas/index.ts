@@ -38,8 +38,8 @@ export const planUpdateSchema = z.object({
 export const subscriptionCreateSchema = z.object({
     tenant_id: z.uuid(),
     plan_name: z.string(),
-    start_from: z.date(),
-    ends_at: z.date(),
+    start_from: z.coerce.date(),
+    ends_at: z.coerce.date(),
     stripe_id: z.string().nullable(),
 });
 
@@ -49,7 +49,7 @@ export const subscriptionUpdatePlanSchema = z.object({
 })
 
 export const subscriptionChangeStatusSchema = z.object({
-    sub_id: z.uuid,
+    sub_id: z.uuid(),
     new_state: z.enum(['active', 'cancelled', 'expired']),
 })
 
@@ -58,8 +58,8 @@ export const subscriptionUpdateSchema = z.object({
     tenant_id: z.uuid(),
     plan_id: z.uuid(),
     sub_status: z.string(),
-    start_from: z.date(),
-    ends_at: z.date,
+    start_from: z.coerce.date(),
+    ends_at: z.coerce.date,
     stripe_id: z.string().nullable(),
 });
 
@@ -71,7 +71,7 @@ export const eventCreateSchema = z.object({
     tenant_id: z.uuid(),
     idempotency_key: z.string().trim().min(1),
     event_type: z.enum(['api_call', 'api_token']),
-    quantity: z.number().int().min(0)
+    quantity: z.number().int().min(1)
 }).strict();
 
 export const eventUpdateSchema = z.object({

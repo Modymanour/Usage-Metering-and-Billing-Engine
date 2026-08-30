@@ -1,10 +1,10 @@
 import type { UUID } from 'node:crypto';
-import { pool, type Queryable } from '../db/pool';
-import { TenantsRepository } from '../repositories/tenants.repository';
-import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
-import { PlansRepository } from '../repositories/plans.repository';
-import { NotFoundError, ValidationError } from "../errors/error";
-import { PaginatedResult } from '../repositories/types';
+import { pool, type Queryable } from '../db/pool.ts';
+import { TenantsRepository } from '../repositories/tenants.repository.ts';
+import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository.ts';
+import { PlansRepository } from '../repositories/plans.repository.ts';
+import { NotFoundError, ValidationError } from "../errors/error.ts";
+import { PaginatedResult } from '../repositories/types.ts';
 
 type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
 

@@ -1,19 +1,18 @@
 import type { Request, Response } from "express";
 import type { UUID } from "node:crypto";
 import { tenantUpdateSchema, registerSchema } from "../schemas";
-import { ControllerErrorHelper } from "./helper";
-import { TenantsService } from "../services/tenants.service";
-import { REPLCommand } from "node:repl";
+import { ControllerErrorHelper } from "./helper.ts";
+import { TenantsService } from "../services/tenants.service.ts";
 
 export class TenantController{
     constructor(
         private readonly tenantService = new TenantsService()
     ){}
 
-    async createTenant(
+    createTenant = async (
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const result = registerSchema.safeParse(req.body);
 
         if(!result.success){
@@ -34,10 +33,10 @@ export class TenantController{
             });
         }
     }
-    async updateTenant(
+    updateTenant = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const result = tenantUpdateSchema.safeParse(req.body);
 
         if(!result.success){
@@ -63,11 +62,10 @@ export class TenantController{
             });
         }
     }
-    async findTenant(
+    findTenant = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
-        
+    ): Promise<Response> => {
         if(!req.params.id){
             return ControllerErrorHelper.handle("id not found", res, "TenantController.findTenant", {
                 body: req.body,
@@ -87,10 +85,10 @@ export class TenantController{
             });
         }
     }
-    async removeTenant(
+    removeTenant = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         if(!req.params.id){
             return ControllerErrorHelper.handle("id not found", res, "TenantController.removeTenant", {
                 body: req.body,
@@ -110,10 +108,10 @@ export class TenantController{
             });
         }
     }
-    async getAll(
+    getAll = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const page = Number(req.query.page ?? 1);
         const pageNumber = Number(req.query.pageNumber ?? 10);
 

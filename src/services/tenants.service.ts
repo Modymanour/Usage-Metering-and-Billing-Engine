@@ -1,8 +1,8 @@
 import type { UUID } from 'node:crypto';
-import { pool, type Queryable } from '../db/pool';
-import { TenantsRepository, type TenantRow } from '../repositories/tenants.repository';
-import { NotFoundError, ValidationError } from "../errors/error";
-import { PaginatedResult } from '../repositories/types';
+import { pool, type Queryable } from '../db/pool.ts';
+import { TenantsRepository, type TenantRow } from '../repositories/tenants.repository.ts';
+import { NotFoundError, ValidationError } from "../errors/error.ts";
+import { PaginatedResult } from '../repositories/types.ts';
 
 export class TenantsService {
     constructor(

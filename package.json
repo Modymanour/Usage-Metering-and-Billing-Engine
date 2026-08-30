@@ -4,7 +4,7 @@
   "description": "",
   "main": "./src/app.ts",
   "scripts": {
-    "start": "npm run db:migrate && node ./src/app.ts",
+    "start":  "npm run db:migrate && tsx ./src/app.ts",
     "test": "node --import tsx --test \"test/**/*.test.ts\"",
     "test:integration": "TEST_DATABASE_URL=\"${TEST_DATABASE_URL:-$POSTGRESQL_CONNECTION_STRING}\" node --import tsx --test test/integration.test.ts",
     "db:migrate": "tsx src/db/migrate.ts up",

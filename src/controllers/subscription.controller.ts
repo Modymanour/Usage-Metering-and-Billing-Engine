@@ -1,17 +1,17 @@
 import type { Request, Response } from "express";
 import type { UUID } from "node:crypto";
 import { subscriptionCreateSchema, subscriptionChangeStatusSchema, subscriptionUpdatePlanSchema } from "../schemas";
-import { ControllerErrorHelper } from "./helper";
-import { SubscriptionService } from "../services/subscription.service";
+import { ControllerErrorHelper } from "./helper.ts";
+import { SubscriptionService } from "../services/subscription.service.ts";
 
 export class SubscriptionController{
     constructor(
         private readonly subscriptionService = new SubscriptionService()
     ){}
-    async createSubscription(
+    createSubscription = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const result = subscriptionCreateSchema.safeParse(req.body);
         if (!result.success) {
             return ControllerErrorHelper.handle(result.error, res, "SubscriptionController.createSubscription", {
@@ -37,10 +37,10 @@ export class SubscriptionController{
             });
         }
     }
-    async updateSubscriptionPlan(
+    updateSubscriptionPlan = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const result = subscriptionUpdatePlanSchema.safeParse(req.body);
         if (!result.success) {
             return ControllerErrorHelper.handle(result.error, res, "SubscriptionController.updateSubscriptionPlan", {
@@ -65,10 +65,10 @@ export class SubscriptionController{
             });
         }
     }
-    async changeSubsciptionStatus(
+    changeSubsciptionStatus = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const result = subscriptionChangeStatusSchema.safeParse(req.body);
         if (!result.success) {
             return ControllerErrorHelper.handle(result.error, res, "SubscriptionController.changeSubscriptionStatus", {
@@ -93,10 +93,10 @@ export class SubscriptionController{
             });
         }
     }
-    async deleteSubscription(
+    deleteSubscription = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         if(!req.params.id){
             return ControllerErrorHelper.handle("Missing id parameter", res, "SubscriptionController.deleteSubscription", {
                 body: req.body,
@@ -116,10 +116,10 @@ export class SubscriptionController{
             });
         }
     }
-    async getSubsciption(
+    getSubsciption = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         if(!req.params.id){
             return ControllerErrorHelper.handle("Missing id parameter", res, "SubscriptionController.dgetSubscription", {
                 body: req.body,
@@ -139,10 +139,10 @@ export class SubscriptionController{
             });
         }
     }
-    async getAll(
+    getAll = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const page = Number(req.query.page ?? 1);
         const pageNumber = Number(req.query.pageNumber ?? 10);
 

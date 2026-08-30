@@ -1,18 +1,18 @@
 import type { Request, Response } from "express";
 import type { UUID } from "node:crypto";
-import { MeterService } from "../services/meter.service";
+import { MeterService } from "../services/meter.service.ts";
 import { eventCreateSchema, checkQuotaSchema } from "../schemas";
-import { ControllerErrorHelper } from "./helper";
+import { ControllerErrorHelper } from "./helper.ts";
 
 export class MeterController{
     constructor(
         private readonly meterService = new MeterService()
     ) {}
 
-    async generate(
+    generate = async(
         req: Request,
         res: Response
-    ){
+    ): Promise<Response> => {
         const result = eventCreateSchema.safeParse(req.body);
 
         if (!result.success) {
@@ -40,14 +40,20 @@ export class MeterController{
         }
     }
 
-    async getQuota(
+    getQuota = async(
         req: Request,
         res: Response
-    ){
-        const result = checkQuotaSchema.safeParse(req.body);
-
-        if (!result.success) {
-            return ControllerErrorHelper.handle(result.error, res, "MeterController.getQuota", {
+    ): Promise<Response> => {
+        
+        if(!req.query.type){
+            return ControllerErrorHelper.handle("Missing type parameter", res, "MeterController.getQuota", {
+                body: req.body,
+                method: req.method,
+                path: req.originalUrl,
+            });
+        }
+        if(!req.query.tenant_id){
+            return ControllerErrorHelper.handle("Missing Tenant Id parameter", res, "MeterController.getQuota", {
                 body: req.body,
                 method: req.method,
                 path: req.originalUrl,
@@ -55,8 +61,8 @@ export class MeterController{
         }
 
         const input = {
-            type: result.data.type,
-            tenant_id: result.data.tenant_id as UUID
+            type: req.query.type as string,
+            tenant_id: req.query.tenant_id as UUID
         };
 
         try {
@@ -70,10 +76,10 @@ export class MeterController{
             });
         }
     }
-    async getAll(
+    getAll = async(
         req: Request,
         res: Response
-    ): Promise<Response>{
+    ): Promise<Response> => {
         const page = Number(req.query.page ?? 1);
         const pageNumber = Number(req.query.pageNumber ?? 10);
 

@@ -1,6 +1,6 @@
 import type { UUID } from 'node:crypto';
-import { Queryable, query, queryOne,queryRows } from '../db/pool';
-import { PaginatedResult } from './types';
+import { Queryable, query, queryOne,queryRows } from '../db/pool.ts';
+import { PaginatedResult } from './types.ts';
 
 
 export interface TenantRow{

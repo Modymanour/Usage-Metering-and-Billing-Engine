@@ -1,10 +1,10 @@
 import type { UUID } from "node:crypto";
-import { pool, type Queryable } from '../db/pool';
-import { TenantsRepository } from '../repositories/tenants.repository';
-import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
-import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository";
-import { NotFoundError, ValidationError } from "../errors/error";
-import { PaginatedResult } from "../repositories/types";
+import { pool, type Queryable } from '../db/pool.ts';
+import { TenantsRepository } from '../repositories/tenants.repository.ts';
+import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository.ts';
+import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository.ts";
+import { NotFoundError, ValidationError } from "../errors/error.ts";
+import { PaginatedResult } from "../repositories/types.ts";
 
 
 export interface QuotaResult{

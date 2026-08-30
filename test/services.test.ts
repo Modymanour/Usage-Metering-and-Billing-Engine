@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MeterService, NotFoundError, ValidationError } from '../src/services/meter.service';
+import { MeterService} from '../src/services/meter.service';
+import { NotFoundError, ValidationError } from '../src/errors/error';
 import { SubscriptionService } from '../src/services/subscription.service';
 import { TenantsService } from '../src/services/tenants.service';
 
@@ -52,6 +53,6 @@ test('tenant and subscription services validate input and map repository results
     const subscriptionService = new SubscriptionService({ findById: async () => undefined } as never, { findById: async () => undefined } as never, {} as never, {} as never);
     await assert.rejects(() => subscriptionService.get_subscription('missing' as never), (error: unknown) =>
         error instanceof Error && error.name === 'NotFoundError' && error.message.includes('missing'));
-    await assert.rejects(() => subscriptionService.create({ tenant_id: tenantId, plan_name: 'Free', start_from: new Date(2), ends_at: new Date(1) }), (error: unknown) =>
+    await assert.rejects(() => subscriptionService.create({ tenant_id: tenantId, plan_name: 'Free', start_from: new Date(2), ends_at: new Date(1), stripe_id: null }), (error: unknown) =>
         error instanceof Error && error.name === 'ValidationError' && error.message.includes('before'));
 });

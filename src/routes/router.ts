@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { SubscriptionController } from '../controllers/subscription.controller';
-import { TenantController } from '../controllers/tenant.controller';
-import { MeterController } from '../controllers/metering.controller';
+import { SubscriptionController } from '../controllers/subscription.controller.ts';
+import { TenantController } from '../controllers/tenant.controller.ts';
+import { MeterController } from '../controllers/metering.controller.ts';
 
 export const router = Router();
 
@@ -41,7 +41,7 @@ router.delete("/subscription/:id", subscriptionController.deleteSubscription);
 
 router.get("/subscription/:id", subscriptionController.getSubsciption);
 
-router.get("subscription", subscriptionController.getAll)
+router.get("/subscription", subscriptionController.getAll)
 
 /* ========================================================================== */
 /* Metering                                                                       */
