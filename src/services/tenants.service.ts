@@ -1,20 +1,8 @@
 import type { UUID } from 'node:crypto';
-import { pool, type Queryable } from '../db/pool';
-import { TenantsRepository, type TenantRow } from '../repositories/tenants.repository';
-
-export class ValidationError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
-
-export class NotFoundError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
+import { pool, type Queryable } from '../db/pool.ts';
+import { TenantsRepository, type TenantRow } from '../repositories/tenants.repository.ts';
+import { NotFoundError, ValidationError } from "../errors/error.ts";
+import { PaginatedResult } from '../repositories/types.ts';
 
 export class TenantsService {
     constructor(
@@ -39,12 +27,18 @@ export class TenantsService {
         return tenant;
     }
 
-    async update(id: UUID, input: { name: string }): Promise<TenantRow> {
+    async update(
+        input: 
+        { 
+          id: UUID,
+          name: string
+        }): Promise<TenantRow> {
         const name = this.validateName(input.name);
+        const id = input.id;
         const tenant = await this.tenantsRepository.update(this.db, { id, name });
 
         if (!tenant) {
-            throw new NotFoundError(`Tenant ${id} was not found`);
+            throw new NotFoundError(`Tenant ${input.id} was not found`);
         }
 
         return tenant;
@@ -63,6 +57,13 @@ export class TenantsService {
     async remove(id: UUID): Promise<void> {
         const tenant = await this.findById(id);
         await this.tenantsRepository.remove_tenant(this.db, tenant.id);
+    }
+    async getAll(
+        page: number,
+        pageNumber: number
+    ): Promise<PaginatedResult<TenantRow>>{
+        const tenants = await this.tenantsRepository.getAll(this.db, page, pageNumber);
+        return tenants
     }
 
     private validateName(name: string): string {

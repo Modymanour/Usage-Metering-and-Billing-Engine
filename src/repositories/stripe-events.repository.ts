@@ -1,5 +1,6 @@
 import { UUID } from 'node:crypto';
-import { Queryable, query, queryOne } from '../db/pool';
+import { Queryable, query, queryOne, queryRows } from '../db/pool.ts';
+import { PaginatedResult } from './types.ts';
 
 export interface StripeEventRow {
     id: UUID,
@@ -73,5 +74,42 @@ export class StripeEventsRepository {
             [stripe_id]
         );
         return row!;
+    }
+    async getAll(
+        db:Queryable,
+        page: number,
+        pageSize: number
+    ): Promise<PaginatedResult<StripeEventRow>>{
+        const offset = (page - 1) * pageSize;
+
+        const totalRow = await queryOne<{ count: string }>(
+            db,
+            `
+                SELECT COUNT(*) AS count
+                FROM stripe_events
+            `
+        );
+
+        const rows = await queryRows<StripeEventRow>(
+            db,
+            `
+                SELECT *
+                FROM stripe_events
+                ORDER BY created_at DESC
+                LIMIT $1
+                OFFSET $2
+            `,
+            [pageSize, offset]
+        );
+
+        const total = Number(totalRow?.count ?? 0);
+
+        return {
+            data: rows,
+            page,
+            pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize)
+        };
     }
 }

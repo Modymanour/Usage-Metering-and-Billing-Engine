@@ -1,5 +1,6 @@
 import type { UUID } from 'node:crypto';
-import { Queryable, query, queryOne } from '../db/pool';
+import { Queryable, query, queryOne,queryRows } from '../db/pool.ts';
+import { PaginatedResult } from './types.ts';
 
 
 export interface TenantRow{
@@ -71,5 +72,42 @@ export class TenantsRepository{
             [id]
         )
         return row!;
+    }
+    async getAll(
+        db:Queryable,
+        page: number,
+        pageSize: number
+    ): Promise<PaginatedResult<TenantRow>>{
+        const offset = (page - 1) * pageSize;
+
+        const totalRow = await queryOne<{ count: string }>(
+            db,
+            `
+                SELECT COUNT(*) AS count
+                FROM tenants
+            `
+        );
+
+        const rows = await queryRows<TenantRow>(
+            db,
+            `
+                SELECT *
+                FROM tenants
+                ORDER BY created_at DESC
+                LIMIT $1
+                OFFSET $2
+            `,
+            [pageSize, offset]
+        );
+
+        const total = Number(totalRow?.count ?? 0);
+
+        return {
+            data: rows,
+            page,
+            pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize)
+        };
     }
 }

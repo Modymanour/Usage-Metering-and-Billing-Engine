@@ -1,8 +1,10 @@
 import type { UUID } from "node:crypto";
-import { pool, type Queryable } from '../db/pool';
-import { TenantsRepository } from '../repositories/tenants.repository';
-import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
-import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository";
+import { pool, type Queryable } from '../db/pool.ts';
+import { TenantsRepository } from '../repositories/tenants.repository.ts';
+import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository.ts';
+import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository.ts";
+import { NotFoundError, ValidationError } from "../errors/error.ts";
+import { PaginatedResult } from "../repositories/types.ts";
 
 
 export interface QuotaResult{
@@ -14,19 +16,6 @@ export interface QuotaResult{
     allowed: boolean
 }
 
-export class ValidationError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ValidationError';
-    }
-}
-
-export class NotFoundError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
 
 export class MeterService{
     constructor(
@@ -133,4 +122,12 @@ export class MeterService{
 
         return await this.eventsRepo.findByIdempotencyKey(this.db, input.tenant_id, input.idempotency_Key);
     }
+    async getAll(
+        page: number,
+        pageNumber: number
+    ): Promise<PaginatedResult<UsageEventRow>>{
+        const tenants = await this.eventsRepo.getAll(this.db, page, pageNumber);
+        return tenants
+    }
+    
 }
