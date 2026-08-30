@@ -1,5 +1,6 @@
 import { UUID } from 'node:crypto';
-import { Queryable, query, queryOne } from '../db/pool';
+import { Queryable, query, queryOne, queryRows } from '../db/pool';
+import { PaginatedResult } from './types';
 
 export interface UsageEventRow {
     id: UUID,
@@ -190,4 +191,41 @@ export class UsageEventsRepository {
 
         return usage!;
     }
+    async getAll(
+            db:Queryable,
+            page: number,
+            pageSize: number
+        ): Promise<PaginatedResult<UsageEventRow>>{
+            const offset = (page - 1) * pageSize;
+    
+            const totalRow = await queryOne<{ count: string }>(
+                db,
+                `
+                    SELECT COUNT(*) AS count
+                    FROM user_events
+                `
+            );
+    
+            const rows = await queryRows<UsageEventRow>(
+                db,
+                `
+                    SELECT *
+                    FROM user_events
+                    ORDER BY created_at DESC
+                    LIMIT $1
+                    OFFSET $2
+                `,
+                [pageSize, offset]
+            );
+    
+            const total = Number(totalRow?.count ?? 0);
+    
+            return {
+                data: rows,
+                page,
+                pageSize,
+                total,
+                totalPages: Math.ceil(total / pageSize)
+            };
+        }
 }

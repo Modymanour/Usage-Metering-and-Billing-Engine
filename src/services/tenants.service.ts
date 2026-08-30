@@ -2,6 +2,7 @@ import type { UUID } from 'node:crypto';
 import { pool, type Queryable } from '../db/pool';
 import { TenantsRepository, type TenantRow } from '../repositories/tenants.repository';
 import { NotFoundError, ValidationError } from "../errors/error";
+import { PaginatedResult } from '../repositories/types';
 
 export class TenantsService {
     constructor(
@@ -56,6 +57,13 @@ export class TenantsService {
     async remove(id: UUID): Promise<void> {
         const tenant = await this.findById(id);
         await this.tenantsRepository.remove_tenant(this.db, tenant.id);
+    }
+    async getAll(
+        page: number,
+        pageNumber: number
+    ): Promise<PaginatedResult<TenantRow>>{
+        const tenants = await this.tenantsRepository.getAll(this.db, page, pageNumber);
+        return tenants
     }
 
     private validateName(name: string): string {

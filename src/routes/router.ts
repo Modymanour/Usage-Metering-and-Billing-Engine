@@ -16,17 +16,19 @@ const meterController = new MeterController();
 router.post("/auth/sign-up", tenantController.createTenant);
 
 /* ========================================================================== */
-/* Tenant                                                                    */
+/* Tenant                                                                     */
 /* ========================================================================== */
 
 router.put("/tenant", tenantController.updateTenant);
 
 router.delete("/tenant/:id", tenantController.removeTenant);
 
-router.get("/tenant/:id", tenantController.findTenant)
+router.get("/tenant/:id", tenantController.findTenant);
+
+router.get("/tenant", tenantController.getAll);
 
 /* ========================================================================== */
-/* Subscription                                                                     */
+/* Subscription                                                               */
 /* ========================================================================== */
 
 router.post("/subscription", subscriptionController.createSubscription);
@@ -39,6 +41,8 @@ router.delete("/subscription/:id", subscriptionController.deleteSubscription);
 
 router.get("/subscription/:id", subscriptionController.getSubsciption);
 
+router.get("subscription", subscriptionController.getAll)
+
 /* ========================================================================== */
 /* Metering                                                                       */
 /* ========================================================================== */
@@ -46,3 +50,5 @@ router.get("/subscription/:id", subscriptionController.getSubsciption);
 router.post("/generate", meterController.generate);
 
 router.get("/get-quota", meterController.getQuota);
+
+router.get("/user-events", meterController.getAll);

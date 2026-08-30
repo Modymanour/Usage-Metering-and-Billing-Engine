@@ -4,6 +4,7 @@ import { TenantsRepository } from '../repositories/tenants.repository';
 import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
 import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository";
 import { NotFoundError, ValidationError } from "../errors/error";
+import { PaginatedResult } from "../repositories/types";
 
 
 export interface QuotaResult{
@@ -121,4 +122,12 @@ export class MeterService{
 
         return await this.eventsRepo.findByIdempotencyKey(this.db, input.tenant_id, input.idempotency_Key);
     }
+    async getAll(
+        page: number,
+        pageNumber: number
+    ): Promise<PaginatedResult<UsageEventRow>>{
+        const tenants = await this.eventsRepo.getAll(this.db, page, pageNumber);
+        return tenants
+    }
+    
 }

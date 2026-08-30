@@ -1,5 +1,6 @@
 import type { UUID } from 'node:crypto';
-import { Queryable, query, queryOne } from '../db/pool';
+import { Queryable, query, queryOne, queryRows } from '../db/pool';
+import { PaginatedResult } from './types';
 
 export interface SubscriptionRow{
     id: UUID,
@@ -123,5 +124,42 @@ export class SubscriptionRepository{
             [tenant_Id]
         )
         return row!;
+    }
+    async getAll(
+        db:Queryable,
+        page: number,
+        pageSize: number
+    ): Promise<PaginatedResult<SubscriptionRow>>{
+        const offset = (page - 1) * pageSize;
+
+        const totalRow = await queryOne<{ count: string }>(
+            db,
+            `
+                SELECT COUNT(*) AS count
+                FROM subscriptions
+            `
+        );
+
+        const rows = await queryRows<SubscriptionRow>(
+            db,
+            `
+                SELECT *
+                FROM subscriptions
+                ORDER BY created_at DESC
+                LIMIT $1
+                OFFSET $2
+            `,
+            [pageSize, offset]
+        );
+
+        const total = Number(totalRow?.count ?? 0);
+
+        return {
+            data: rows,
+            page,
+            pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize)
+        };
     }
 }

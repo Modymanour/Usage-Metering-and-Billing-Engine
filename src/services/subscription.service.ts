@@ -4,6 +4,7 @@ import { TenantsRepository } from '../repositories/tenants.repository';
 import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository';
 import { PlansRepository } from '../repositories/plans.repository';
 import { NotFoundError, ValidationError } from "../errors/error";
+import { PaginatedResult } from '../repositories/types';
 
 type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
 
@@ -116,7 +117,13 @@ export class SubscriptionService {
         }
         return subscription;
     }
-
+    async getAll(
+            page: number,
+            pageNumber: number
+        ): Promise<PaginatedResult<SubscriptionRow>>{
+            const rows = await this.subscriptionRepo.getAll(this.db, page, pageNumber);
+            return rows
+        }
     private validatePlanName(planName: string): string {
         const normalizedPlanName = planName?.trim();
 

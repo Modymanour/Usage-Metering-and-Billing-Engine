@@ -139,4 +139,22 @@ export class SubscriptionController{
             });
         }
     }
+    async getAll(
+        req: Request,
+        res: Response
+    ): Promise<Response>{
+        const page = Number(req.query.page ?? 1);
+        const pageNumber = Number(req.query.pageNumber ?? 10);
+
+        try{
+            const event = await this.subscriptionService.getAll(page, pageNumber);
+            return res.status(200).json(event);
+        } catch (err) {
+            return ControllerErrorHelper.handle(err, res, "SubscriptionController.getAll", {
+                body: req.body,
+                method: req.method,
+                path: req.originalUrl,
+            });
+        }
+    }
 }
