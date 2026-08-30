@@ -1,9 +1,12 @@
 import express from 'express';
 import { router } from './routes/router.ts';
+import { StripeWebhookController } from './controllers/stripe-webhook.controller.ts';
 const PORT = 3000;
 
 const app = express();
+const stripeWebhookController = new StripeWebhookController();
 
+app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookController.handle.bind(stripeWebhookController));
 app.use(express.json());
 
 app.use(router);

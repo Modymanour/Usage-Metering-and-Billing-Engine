@@ -80,3 +80,21 @@ containing the migrations:
 ```bash
 TEST_DATABASE_URL=postgres://postgres:dev@localhost:5432/BillingEngine npm run test:integration
 ```
+
+## Stripe webhooks
+
+Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in the private environment
+file. The webhook endpoint is `POST /webhooks/stripe`; it must receive Stripe's
+raw JSON body, which the application preserves before applying JSON parsing.
+
+For subscription events, set these Stripe subscription metadata values:
+
+- `tenant_id`: the tenant UUID
+- `plan_name`: the local plan name
+
+Forward test events locally with the Stripe CLI:
+
+```bash
+stripe listen --forward-to localhost:3000/webhooks/stripe
+stripe trigger customer.subscription.created
+```

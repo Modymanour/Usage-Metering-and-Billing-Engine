@@ -125,6 +125,20 @@ export class SubscriptionRepository{
         )
         return row!;
     }
+    async findByStripeId(
+        db: Queryable,
+        stripe_id: string
+    ): Promise<SubscriptionRow | undefined> {
+        const row = await queryOne<SubscriptionRow>(
+            db,
+            `SELECT ${SUBSCRIPTIONCOLUMNS}
+             FROM subscriptions
+             WHERE stripe_id = $1
+             LIMIT 1`,
+            [stripe_id]
+        );
+        return row;
+    }
     async getAll(
         db:Queryable,
         page: number,
