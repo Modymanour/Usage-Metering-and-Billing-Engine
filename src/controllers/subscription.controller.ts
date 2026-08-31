@@ -23,8 +23,7 @@ export class SubscriptionController{
 
         const input = {
             ...result.data,
-            tenant_id: result.data.tenant_id as UUID,
-            stripe_id: result.data.stripe_id as UUID
+            tenant_id: result.data.tenant_id as UUID
         }
         try{
             const event = await this.subscriptionService.create(input);

@@ -3,7 +3,7 @@ import { pool, type Queryable } from '../db/pool.ts';
 import { TenantsRepository } from '../repositories/tenants.repository.ts';
 import { SubscriptionRepository, type SubscriptionRow } from '../repositories/subscriptions.repository.ts';
 import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository.ts";
-import { NotFoundError, ValidationError } from "../errors/error.ts";
+import { NotFoundError, ValidationError, TooManyRequests, PaymentRequired } from "../errors/error.ts";
 import { PaginatedResult } from "../repositories/types.ts";
 
 
@@ -47,13 +47,17 @@ export class MeterService{
             throw new NotFoundError(`Subscription for tenant: ${input.tenant_id} was not found`);
         }
 
+        if(subscription.sub_status !== "active"){
+            throw new PaymentRequired(`Your subscription is past due or inactive.`);
+        }
+
         const quota = await this.checkQuota({
             tenant_id: input.tenant_id,
             type: input.event_type
         })
 
         if(quota.used + input.quantity > quota.limit){
-            throw new ValidationError(`Limit has been reached for this subscription`);
+            throw new TooManyRequests(`Limit has been reached for this subscription`);
         }
 
         const data = await this.eventsRepo.create(this.db, {

@@ -7,10 +7,11 @@ export interface PlanRow{
     name: string,
     created_at: Date,
     api_call_limit: number,
-    api_token_limit: number
+    api_token_limit: number,
+    stripe_price_id: string
 }
 
-const PLANCOLUMNS = "id, plan_name AS name, created_at, api_call_limit, api_token_limit";
+const PLANCOLUMNS = "id, plan_name AS name, created_at, api_call_limit, api_token_limit, stripe_price_id";
 
 export class PlansRepository{
     //Creation
@@ -34,10 +35,11 @@ export class PlansRepository{
     async update(
         db:Queryable,
         input:{
-            id:UUID
-            name:string | null,
-            api_call_limit:number | null,
-            api_token_limit:number | null
+            id: UUID
+            name: string | null,
+            api_call_limit: number | null,
+            api_token_limit: number | null,
+            stripe_price_id: string | null
         }
     ): Promise<PlanRow>{
         const row = await queryOne<PlanRow>(
@@ -45,12 +47,14 @@ export class PlansRepository{
             `UPDATE plans SET
              plan_name       = COALESCE($1, plan_name),
              api_call_limit  = COALESCE($2, api_call_limit),
-             api_token_limit = COALESCE($3, api_token_limit)
-             WHERE id = $4 RETURNING ${PLANCOLUMNS}`,
+             api_token_limit = COALESCE($3, api_token_limit),
+             stripe_price_id = COALESCE($4, stripe_price_id)
+             WHERE id = $5 RETURNING ${PLANCOLUMNS}`,
              [
                 input.name ?? null,
                 input.api_call_limit ?? null,
                 input.api_token_limit ?? null,
+                input.stripe_price_id ?? null,
                 input.id
              ]
         );

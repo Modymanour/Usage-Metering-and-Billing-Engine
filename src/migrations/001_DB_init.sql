@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TYPE subscription_status AS ENUM ('active', 'cancelled', 'expired');
+CREATE TYPE subscription_status AS ENUM ('active', 'trialing', 'cancelled', 'expired');
 
 CREATE TABLE IF NOT EXISTS tenants (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

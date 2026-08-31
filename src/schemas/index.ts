@@ -40,7 +40,6 @@ export const subscriptionCreateSchema = z.object({
     plan_name: z.string(),
     start_from: z.coerce.date(),
     ends_at: z.coerce.date(),
-    stripe_id: z.string().nullable(),
 });
 
 export const subscriptionUpdatePlanSchema = z.object({

@@ -5,14 +5,16 @@ import { SubscriptionRepository, type SubscriptionRow } from '../repositories/su
 import { PlansRepository } from '../repositories/plans.repository.ts';
 import { NotFoundError, ValidationError } from "../errors/error.ts";
 import { PaginatedResult } from '../repositories/types.ts';
+import { StripeWebhookService } from './stripe-webhook.service.ts';
 
-type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
+type SubscriptionStatus = 'active' | 'trialing' | 'cancelled' | 'expired';
 
 export class SubscriptionService {
     constructor(
         private readonly tenantsRepo = new TenantsRepository(),
         private readonly subscriptionRepo = new SubscriptionRepository(),
         private readonly planRepo = new PlansRepository(),
+        private readonly stripeService = new StripeWebhookService(),
         private readonly db: Queryable = pool,
     ) {}
 
@@ -22,7 +24,6 @@ export class SubscriptionService {
             plan_name: string,
             start_from: Date,
             ends_at: Date,
-            stripe_id: UUID | null
         }
     ): Promise<SubscriptionRow>{
         this.validatePlanName(input.plan_name);
@@ -35,15 +36,32 @@ export class SubscriptionService {
         if(!tenant) throw new NotFoundError(`Tenant by id: ${input.tenant_id} not found`);
         if(!plan) throw new NotFoundError(`Plan by name of: ${input.plan_name} not found`);
 
+        if(input.plan_name === "Free"){
+            const subscription = await this.subscriptionRepo.create(this.db, {
+                tenant_id: tenant.id,
+                plan_id: plan.id,
+                sub_status: "active",
+                start_from: input.start_from,
+                ends_at: input.ends_at,
+                stripe_id: null,
+            });
+            if (!subscription) throw new Error('Subscription was not created');
+            return subscription;
+        }
+        // else the plan is Pro
         const subscription = await this.subscriptionRepo.create(this.db, {
             tenant_id: tenant.id,
             plan_id: plan.id,
-            sub_status: "active",
+            sub_status: "trialing",
             start_from: input.start_from,
             ends_at: input.ends_at,
             stripe_id: null,
         });
         if (!subscription) throw new Error('Subscription was not created');
+
+        const stripe_subscription = await this.stripeService.createSubscription(tenant.stripe_customer_id, plan.stripe_price_id, tenant.id, "Pro");
+        await this.subscriptionRepo.assignStripeId(this.db, subscription.id, stripe_subscription.id);
+
         return subscription;
     }
 
@@ -62,16 +80,21 @@ export class SubscriptionService {
         if(!subscription) throw new NotFoundError(`Subscription by id: ${input.sub_id} does not exist`);
         if(!plan) throw new NotFoundError(`Plan by name of: ${input.new_plan_name} not found`);
 
+        const tenant = await this.tenantsRepo.findById(this.db,subscription.tenant_id);
+        if(!tenant) throw new NotFoundError(`Tenant by id: ${subscription.tenant_id} not found`);
+
         const new_subscription = await this.subscriptionRepo.update(this.db,{
             id: subscription.id,
             tenant_id: null,
             plan_id: plan.id,
             start_from: null,
-            stripe_id: null,
-            sub_status: null,
+            sub_status: "trialing",
             ends_at: null,
         })
         if (!new_subscription) throw new Error('Subscription plan was not updated');
+        const stripe_subscription = await this.stripeService.createSubscription(tenant.stripe_customer_id, plan.stripe_price_id, tenant.id, "Pro");
+        await this.subscriptionRepo.assignStripeId(this.db, subscription.id, stripe_subscription.id);
+
         return new_subscription;
     }
 
@@ -91,7 +114,6 @@ export class SubscriptionService {
             tenant_id: null,
             plan_id: null,
             start_from: null,
-            stripe_id: null,
             sub_status: input.new_state,
             ends_at: null,
         })
@@ -149,8 +171,8 @@ export class SubscriptionService {
     }
 
     private validateStatus(status: string): asserts status is SubscriptionStatus {
-        if (status !== 'cancelled' && status !== 'expired') {
-            throw new ValidationError('Subscription status must be cancelled or expired');
+        if (status !== 'cancelled' && status !== 'expired' && status !== 'active') {
+            throw new ValidationError('Subscription status must be cancelled, expired or active');
         }
     }
 }
