@@ -171,8 +171,8 @@ export class SubscriptionService {
     }
 
     private validateStatus(status: string): asserts status is SubscriptionStatus {
-        if (status !== 'cancelled' && status !== 'expired') {
-            throw new ValidationError('Subscription status must be cancelled or expired');
+        if (status !== 'cancelled' && status !== 'expired' && status !== 'active') {
+            throw new ValidationError('Subscription status must be cancelled, expired or active');
         }
     }
 }

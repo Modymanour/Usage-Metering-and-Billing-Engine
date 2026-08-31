@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { MeterService} from '../src/services/meter.service';
-import { NotFoundError, ValidationError } from '../src/errors/error';
+import { NotFoundError, TooManyRequests, ValidationError } from '../src/errors/error';
 import { SubscriptionService } from '../src/services/subscription.service';
 import { TenantsService } from '../src/services/tenants.service';
 
@@ -35,7 +35,7 @@ test('meter rejects invalid type, quantity, and quota overflow', async () => {
     await assert.rejects(() => meter().recordUsage({ tenant_id: tenantId, event_type: 'other', idempotency_key: 'key', quantity: 1 }), ValidationError);
     await assert.rejects(() => meter().recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'key', quantity: -1 }), ValidationError);
     const full = meter({ eventsRepo: { getCurrentQuota: async () => ({ limit: 3, used: 2 }) } });
-    await assert.rejects(() => full.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'new', quantity: 2 }), ValidationError);
+    await assert.rejects(() => full.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'new', quantity: 2 }), TooManyRequests);
 });
 
 test('meter reports missing tenant and subscription', async () => {
@@ -46,13 +46,43 @@ test('meter reports missing tenant and subscription', async () => {
 });
 
 test('tenant and subscription services validate input and map repository results', async () => {
-    const tenantService = new TenantsService({ create: async (_db: unknown, input: { name: string; email: string; password: string }) => ({ id: tenantId, display_name: input.name, email: input.email, created_at: new Date() }) } as never, {} as never);
+    const tenantId = '00000000-0000-0000-0000-000000000000';
+
+    // Mock TenantsRepository methods used in TenantsService
+    const mockTenantsRepo = {
+        create: async (_db: unknown, input: { name: string; email: string; password: string }) => ({
+            id: tenantId,
+            display_name: input.name,
+            email: input.email,
+            created_at: new Date()
+        }),
+        asignStripeId: async (_db: unknown, _tenantId: string, _stripeId: string) => ({})
+    };
+
+    const mockStripeService = {
+        createCustomer: async () => ({ id: 'stripe_cust_123' }),
+        createSubscription: async () => ({ id: 'stripe_sub_123' })
+    };
+
+    const tenantService = new TenantsService(
+        mockTenantsRepo as never,
+        mockStripeService as never,
+        {} as never
+    );
+
     assert.equal((await tenantService.create({ name: '  Acme  ', email: 'a@b.test', password: 'secret' })).display_name, 'Acme');
     await assert.rejects(() => tenantService.create({ name: ' ', email: 'a@b.test', password: 'secret' }), /Tenant name is required/);
 
-    const subscriptionService = new SubscriptionService({ findById: async () => undefined } as never, { findById: async () => undefined } as never, {} as never, {} as never);
+    const subscriptionService = new SubscriptionService(
+        { findById: async () => undefined } as never,
+        { findById: async () => undefined } as never,
+        { findByName: async () => undefined } as never,
+        mockStripeService as never,
+        {} as never
+    );
+
     await assert.rejects(() => subscriptionService.get_subscription('missing' as never), (error: unknown) =>
         error instanceof Error && error.name === 'NotFoundError' && error.message.includes('missing'));
-    await assert.rejects(() => subscriptionService.create({ tenant_id: tenantId, plan_name: 'Free', start_from: new Date(2), ends_at: new Date(1), stripe_id: null }), (error: unknown) =>
+    await assert.rejects(() => subscriptionService.create({ tenant_id: tenantId as never, plan_name: 'Free', start_from: new Date(2), ends_at: new Date(1)}), (error: unknown) =>
         error instanceof Error && error.name === 'ValidationError' && error.message.includes('before'));
 });

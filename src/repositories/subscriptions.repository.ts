@@ -129,7 +129,6 @@ export class SubscriptionRepository{
             `SELECT s.*
              FROM subscriptions s
              WHERE s.tenant_id = $1
-                AND s.sub_status = 'active'
                 AND NOW() >= s.start_from
                 AND NOW() < s.ends_at
              ORDER BY s.start_from DESC
