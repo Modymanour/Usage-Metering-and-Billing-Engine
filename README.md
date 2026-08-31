@@ -109,8 +109,9 @@ file. The webhook endpoint is `POST /webhooks/stripe`; it must receive Stripe's
 raw JSON body, which the application preserves before applying JSON parsing.
 
 The system creates a stripe customer within the tenant creation along with a test wallet; however, the payment plan must be configured through the cli and be hard-coded
-into the "Pro" plan on the column (stripe_price_id) in the 004_stripe_integeration.sql migration in the migrations folder. The plan_price on the migration is used for test purposes 
-and should generally not be pushed into a public repository.
+into the **"Pro"** plan on the column `stripe_price_id` in the *004_stripe_integeration.sql* migration in the migrations folder. 
+
+The `plan_price` on the migration is used for test purposes and should generally not be pushed into a public repository.
 
 For subscription events, set these Stripe subscription metadata values:
 
@@ -122,11 +123,11 @@ To Test, you will run this command on the cli:
 ```bash
 stripe listen --forward-to localhost:3000/webhooks/stripe
 ```
-Then, run the subscription creation API with the subscription being "Pro"; this will trigger a stripe subscription which if successful will return a result on the webhook.
+Then, run the subscription creation API with the subscription being **"Pro"**; this will trigger a stripe subscription which if successful will return a result on the webhook.
 
-Another case of the webhook being triggered is when a subscription plan changes from "free" tier to "Pro" tier.
+Another case of the webhook being triggered is when a subscription plan changes from **"free"** tier to **"Pro"** tier.
 
-## Architecture Flow 
+### Architecture Flow 
 
 ```text
        [ Client ]
