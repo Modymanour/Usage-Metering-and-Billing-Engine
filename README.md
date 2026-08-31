@@ -59,12 +59,33 @@ src/
 	routes/                   Express router
 	controllers/              Request handlers
 	services/                 Application services
+	schemas/				  Zod schema for the APIs
+	errors/					  Specified Errors for the system
 ```
 
 ## Database Schema
 
 <img width="1502" height="772" alt="Usage-Metering-and-Billing-Engine ERD drawio" src="https://github.com/user-attachments/assets/16b84f11-9a84-488c-b44f-5145700d7c55" />
 
+
+## API Reference
+
+| Category | Method | Endpoint | Description | Request Body / Parameters |
+| :--- | :--- | :--- | :--- | :--- |
+| **Auth** | `POST` | `/auth/sign-up` | Register a new tenant account | **JSON Body:**<br>`name`: `string`<br>`email`: `string` (valid email format)<br>`password`: `string` (min 8, max 256 chars) |
+| **Tenant** | `PUT` | `/tenant` | Update an existing tenant's profile | **JSON Body:**<br>`id`: `uuid`<br>`name`: `string` |
+| **Tenant** | `DELETE` | `/tenant/:id` | Remove a tenant account | **Path Param:**<br>`id`: `uuid` |
+| **Tenant** | `GET` | `/tenant/:id` | Retrieve tenant details by ID | **Path Param:**<br>`id`: `uuid` |
+| **Tenant** | `GET` | `/tenant` | List all registered tenants (paginated) | **Query Params:**<br>`page`: `number` *(optional)*<br>`pageSize`: `number` *(optional)* |
+| **Subscription** | `POST` | `/subscription` | Create a new tenant subscription | **JSON Body:**<br>`tenant_id`: `uuid`<br>`plan_name`: `string`<br>`start_from`: `date-string` (ISO format)<br>`ends_at`: `date-string` (ISO format) |
+| **Subscription** | `PUT` | `/subscription/plan` | Upgrade/downgrade subscription plan | **JSON Body:**<br>`sub_id`: `uuid`<br>`new_plan_name`: `string` |
+| **Subscription** | `PUT` | `/subscription/status` | Change active status of a subscription | **JSON Body:**<br>`sub_id`: `uuid`<br>`new_state`: `"active"` \| `"cancelled"` \| `"expired"` |
+| **Subscription** | `DELETE` | `/subscription/:id` | Delete a subscription | **Path Param:**<br>`id`: `uuid` |
+| **Subscription** | `GET` | `/subscription/:id` | Get subscription details by ID | **Path Param:**<br>`id`: `uuid` |
+| **Subscription** | `GET` | `/subscription` | List all subscriptions (paginated) | **Query Params:**<br>`page`: `number` *(optional)*<br>`pageSize`: `number` *(optional)* |
+| **Metering** | `POST` | `/generate` | Record unit usage / meter event | **JSON Body:**<br>`tenant_id`: `uuid`<br>`idempotency_key`: `string`<br>`event_type`: `"api_call"` \| `"api_token"`<br>`quantity`: `integer` (min 1) |
+| **Metering** | `GET` | `/get-quota` | Check current tenant quota status | **Query / Body Params:**<br>`tenant_id`: `uuid`<br>`type`: `"api_call"` \| `"api_token"` |
+| **Metering** | `GET` | `/user-events` | List all usage events (paginated) | **Query Params:**<br>`page`: `number` *(optional)*<br>`pageSize`: `number` *(optional)* |
 
 ## Tests
 
@@ -87,14 +108,47 @@ Set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in the private environment
 file. The webhook endpoint is `POST /webhooks/stripe`; it must receive Stripe's
 raw JSON body, which the application preserves before applying JSON parsing.
 
+The system creates a stripe customer within the tenant creation along with a test wallet; however, the payment plan must be configured through the cli and be hard-coded
+into the "Pro" plan on the column (stripe_price_id) in the 004_stripe_integeration.sql migration in the migrations folder. The plan_price on the migration is used for test purposes 
+and should generally not be pushed into a public repository.
+
 For subscription events, set these Stripe subscription metadata values:
 
 - `tenant_id`: the tenant UUID
 - `plan_name`: the local plan name
 
-Forward test events locally with the Stripe CLI:
+To Test, you will run this command on the cli:
 
 ```bash
 stripe listen --forward-to localhost:3000/webhooks/stripe
-stripe trigger customer.subscription.created
 ```
+Then, run the subscription creation API with the subscription being "Pro"; this will trigger a stripe subscription which if successful will return a result on the webhook.
+
+Another case of the webhook being triggered is when a subscription plan changes from "free" tier to "Pro" tier.
+
+## Architecture Flow 
+
+```text
+       [ Client ]
+           │
+           │ POST /auth/sign-up
+           ▼
+┌──────────────────────┐
+│   Tenants Service    │ ──( 1. Create Tenant Record )──► [ Database ]
+└──────────┬───────────┘
+           │
+           │ 2. Create Stripe Customer
+           ▼
+┌──────────────────────┐
+│ Subscription Service │ ──( 3. Create Local Sub: 'trialing' )──► [ Database ]
+└──────────┬───────────┘
+           │
+           │ 4. Create Subscription (with metadata)
+           ▼
+    [ Stripe API ]
+           │
+           │ 5. customer.subscription.created / updated (Async Webhook)
+           ▼
+┌──────────────────────┐
+│ Stripe Webhook Serv. │ ──( 6. Sync Sub Status: 'active' )──► [ Database ]
+└──────────────────────┘
