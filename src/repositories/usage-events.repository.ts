@@ -8,7 +8,11 @@ export interface UsageEventRow {
     created_at: Date,
     idempotency_key: string,
     event_type: string,
-    quantity: number
+    quantity: number,
+    input_tokens: number,
+    cached_input_tokens: number,
+    output_tokens: number,
+    reasoning_tokens: number
 }
 export interface QuotaRow{
     tenant_id: UUID,
@@ -37,7 +41,7 @@ interface UsageSummaryRow {
 }
 
 const USAGE_EVENT_COLUMNS = `
-    id, tenant_id, created_at, idempotency_key, event_type, quantity`;
+    id, tenant_id, created_at, idempotency_key, event_type, quantity, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens`;
 
 export class UsageEventsRepository {
     async create(
@@ -46,15 +50,28 @@ export class UsageEventsRepository {
             tenant_id: UUID,
             idempotency_key: string,
             event_type: string,
-            quantity: number
+            quantity: number,
+            input_tokens: number,
+            cached_input_tokens: number,
+            output_tokens: number,
+            reasoning_tokens: number
         }
     ): Promise<UsageEventRow> {
         const row = await queryOne<UsageEventRow>(
             db,
-            `INSERT INTO user_events (tenant_id, idempotency_key, event_type, quantity)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO user_events (tenant_id, idempotency_key, event_type, quantity, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING ${USAGE_EVENT_COLUMNS}`,
-            [input.tenant_id, input.idempotency_key, input.event_type, input.quantity]
+            [
+                input.tenant_id,
+                input.idempotency_key,
+                input.event_type,
+                input.quantity,
+                input.input_tokens,
+                input.cached_input_tokens,
+                input.output_tokens,
+                input.reasoning_tokens
+            ]
         );
         return row!;
     }
@@ -66,23 +83,35 @@ export class UsageEventsRepository {
             tenant_id: UUID | null,
             idempotency_key: string | null,
             event_type: string | null,
-            quantity: number | null
+            quantity: number | null,
+            input_tokens: number | null,
+            cached_input_tokens: number | null,
+            output_tokens: number | null,
+            reasoning_tokens: number | null
         }
     ): Promise<UsageEventRow> {
         const row = await queryOne<UsageEventRow>(
             db,
             `UPDATE user_events SET
-             tenant_id       = COALESCE($1, tenant_id),
-             idempotency_key = COALESCE($2, idempotency_key),
-             event_type      = COALESCE($3, event_type),
-             quantity        = COALESCE($4, quantity)
-             WHERE id = $5
+             tenant_id          = COALESCE($1, tenant_id),
+             idempotency_key    = COALESCE($2, idempotency_key),
+             event_type         = COALESCE($3, event_type),
+             quantity           = COALESCE($4, quantity),
+             input_tokens       = COALESCE($5, input_tokens),
+             cached_input_tokens= COALESCE($6, cached_input_tokens),
+             output_tokens      = COALESCE(%7, output_tokens),
+             reasoning_tokens   = COALESCE(%8, reasoning_tokens)
+             WHERE id = $9
              RETURNING ${USAGE_EVENT_COLUMNS}`,
             [
                 input.tenant_id ?? null,
                 input.idempotency_key ?? null,
                 input.event_type ?? null,
                 input.quantity ?? null,
+                input.input_tokens ?? null,
+                input.cached_input_tokens ?? null,
+                input.output_tokens ?? null,
+                input.reasoning_tokens ?? null,
                 input.id
             ]
         );

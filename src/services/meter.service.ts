@@ -30,7 +30,11 @@ export class MeterService{
             tenant_id: UUID,
             event_type: string,
             idempotency_key: string,
-            quantity: number
+            quantity: number,
+            input_tokens: number,
+            cached_input_tokens: number,
+            output_tokens: number,
+            reasoning_tokens: number
         }
     ): Promise<UsageEventRow>{
         this.validateUsageInput(input);
@@ -64,7 +68,11 @@ export class MeterService{
             tenant_id: input.tenant_id,
             idempotency_key: input.idempotency_key,
             event_type: input.event_type,
-            quantity: input.quantity
+            quantity: input.quantity,
+            input_tokens: input.input_tokens,
+            cached_input_tokens: input.cached_input_tokens,
+            output_tokens: input.output_tokens,
+            reasoning_tokens: input.reasoning_tokens
         });
 
         if(!data){

@@ -70,7 +70,11 @@ export const eventCreateSchema = z.object({
     tenant_id: z.uuid(),
     idempotency_key: z.string().trim().min(1),
     event_type: z.enum(['api_call', 'api_token']),
-    quantity: z.number().int().min(1)
+    quantity: z.number().int().min(1),
+    input_tokens: z.number().int().min(1),
+    cached_input_tokens: z.number().int().min(1),
+    output_tokens: z.number().int().min(1),
+    reasoning_tokens: z.number().int().min(1)
 }).strict();
 
 export const eventUpdateSchema = z.object({
@@ -78,7 +82,11 @@ export const eventUpdateSchema = z.object({
     tenant_id: z.uuid().nullable(),
     idempotency_key: z.string().nullable(),
     event_type: z.string().nullable(),
-    quantity: z.number().nullable()
+    quantity: z.number().nullable(),
+    input_tokens: z.number().int().min(1),
+    cached_input_tokens: z.number().int().min(1),
+    output_tokens: z.number().int().min(1),
+    reasoning_tokens: z.number().int().min(1)
 })
 
 export const checkQuotaSchema = z.object({
