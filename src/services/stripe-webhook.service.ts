@@ -17,6 +17,7 @@ export class StripeWebhookService {
     ) {}
 
     async process(event: Stripe.Event): Promise<{ duplicate: boolean }> {
+        console.log("INside stripe servie function");
         const stripeEventId = event.id;
         if (await this.stripeEventsRepo.findByStripeId(this.db, stripeEventId)) {
             return { duplicate: true };

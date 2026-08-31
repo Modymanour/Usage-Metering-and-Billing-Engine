@@ -32,6 +32,10 @@ export class ControllerErrorHelper {
             return res.status(400).json({ error: "Invalid Stripe webhook signature" });
         }
 
+        if(error.name === "StripeConfiguration"){
+            return res.status(400).json({ error: "Invalid Stripe Configuration" });
+        }
+
         if (typeof (error as { issues?: unknown }).issues !== "undefined") {
             return res.status(400).json({
                 error: "Invalid request payload",
