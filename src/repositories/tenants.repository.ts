@@ -7,9 +7,10 @@ export interface TenantRow{
     id: UUID,
     display_name: string,
     email:string,
+    stripe_customer_id: string,
     created_at: Date
 }
-const TENANTCOLUMNS = "id, display_name AS name, created_at";
+const TENANTCOLUMNS = "id, display_name AS name, stripe_customer_id, created_at";
 
 export class TenantsRepository{
     //Creation
@@ -44,6 +45,18 @@ export class TenantsRepository{
            db,
             `UPDATE tenants SET display_name = $1 WHERE id = $2 RETURNING ${TENANTCOLUMNS}`,
             [input.name, input.id],
+        )
+        return row;
+    }
+    async asignStripeId(
+        db:Queryable,
+        id: UUID,
+        stripe_id: string
+    ): Promise<TenantRow | undefined>{
+        const row = await queryOne<TenantRow>(
+           db,
+            `UPDATE tenants SET stripe_customer_id = $1 WHERE id = $2 RETURNING ${TENANTCOLUMNS}`,
+            [stripe_id, id],
         )
         return row;
     }

@@ -57,7 +57,6 @@ export class SubscriptionRepository{
             sub_status:string | null,
             start_from:Date | null,
             ends_at:Date | null,
-            stripe_id:string | null
         }
     ):Promise<SubscriptionRow | undefined>{
         const row = await queryOne<SubscriptionRow>(
@@ -67,17 +66,31 @@ export class SubscriptionRepository{
              plan_id        = COALESCE($2, plan_id),
              sub_status     = COALESCE($3, sub_status),
              start_from     = COALESCE($4, start_from),
-             ends_at        = COALESCE($5, ends_at),
-             stripe_id      = COALESCE($6, stripe_id)
-             WHERE id = $7 RETURNING ${SUBSCRIPTIONCOLUMNS}`,
+             ends_at        = COALESCE($5, ends_at)
+             WHERE id = $6 RETURNING ${SUBSCRIPTIONCOLUMNS}`,
              [
                 input.tenant_id ?? null,
                 input.plan_id ?? null,
                 input.sub_status ?? null,
                 input.start_from ?? null,
                 input.ends_at ?? null,
-                input.stripe_id ?? null,
                 input.id
+             ]
+        )
+        return row!;
+    }
+    async assignStripeId(
+        db:Queryable,
+        id: UUID,
+        stripe_id: string
+    ): Promise<SubscriptionRow>{
+        const row = await queryOne<SubscriptionRow>(
+            db,
+            `UPDATE subscriptions SET stripe_id = $1
+             WHERE id = $2 RETURNING ${SUBSCRIPTIONCOLUMNS}`,
+             [
+                stripe_id,
+                id
              ]
         )
         return row!;

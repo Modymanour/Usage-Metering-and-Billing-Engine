@@ -47,6 +47,10 @@ export class MeterService{
             throw new NotFoundError(`Subscription for tenant: ${input.tenant_id} was not found`);
         }
 
+        if(subscription.sub_status !== "active"){
+            throw new ValidationError(`Subscription for tenant: ${input.tenant_id} is not active with status: ${subscription.sub_status}`);
+        }
+
         const quota = await this.checkQuota({
             tenant_id: input.tenant_id,
             type: input.event_type
