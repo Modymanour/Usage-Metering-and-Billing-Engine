@@ -25,7 +25,11 @@ export interface CurrentUsage{
         limit: number
     },
     aiTokens:{
-        used: number,
+        input_token: number,
+        cached_input_tokens: number,
+        output_tokens: number,
+        reasoning_tokens: number,
+        total_used: number,
         limit: number,
     },
     cost:{
@@ -75,17 +79,14 @@ export class MeterService{
             throw new PaymentRequired(`Your subscription is past due or inactive.`);
         }
 
-        const quota = await this.checkQuota({
-            tenant_id: input.tenant_id,
-            type: input.event_type
-        })
+        const quota = await this.checkQuota(input.tenant_id);
 
         if(input.event_type === "api_call"){
             if (input.quantity == null) {
                 throw new ValidationError('Quantity is required for api_call events');
             }
 
-            if(quota.used + input.quantity > quota.limit){
+            if(quota.api_call_used + input.quantity > quota.api_call_limit){
                 throw new TooManyRequests(`Api Call Limit has been reached for this subscription`);
             }
     
@@ -109,7 +110,7 @@ export class MeterService{
             if(input.cached_input_tokens == null || input.reasoning_tokens == null || input.input_tokens == null || input.output_tokens == null){
                 throw new ValidationError('Token values are required for api_token events');
             }
-            if(input.cached_input_tokens + input.reasoning_tokens + input.input_tokens + input.output_tokens + quota.total_tokens > quota.limit){
+            if(input.cached_input_tokens + input.reasoning_tokens + input.input_tokens + input.output_tokens + quota.total_tokens > quota.token_limit){
                 throw new TooManyRequests(`Token Limit has been reached for this subscription`);
             }
     
@@ -139,27 +140,38 @@ export class MeterService{
             throw new NotFoundError(`Tenant by Id: ${tenant_id} was not found`)
         }
 
-        const api_calls = await this.eventsRepo.getCurrentQuota(this.db, tenant_id, "api_call");
-        const api_tokens = await this.eventsRepo.getCurrentQuota(this.db, tenant_id, "api_tokens");
+        const api_usage = await this.eventsRepo.getCurrentQuota(this.db, tenant_id);
+
+        console.log(`Api Tokens Current Quota for tenant: ${tenant.id} with name: ${tenant.display_name}\n
+            ${api_usage}`);
 
         const tokensCost = this.costService.calculateAICost({
-            inputTokens: api_tokens?.input_tokens as number,
-            cachedInputTokens: api_tokens?.cached_input_tokens as number,
-            outputTokens: api_tokens?.output_tokens as number,
-            reasoningTokens: api_tokens?.reasoning_tokens as number
+            inputTokens: api_usage?.input_tokens as number,
+            cachedInputTokens: api_usage?.cached_input_tokens as number,
+            outputTokens: api_usage?.output_tokens as number,
+            reasoningTokens: api_usage?.reasoning_tokens as number
         });
+        console.log(`Token Cost for tenant: ${tenant.id} with name: ${tenant.display_name}\n 
+            input tokens: ${tokensCost.inputCostCents}\n
+            cached input tokens: ${tokensCost.cachedInputCostCents}\n
+            output tokens: ${tokensCost.outputCostCents}\n
+            reasoning tokens: ${tokensCost.reasoningCostCents}`);
 
-        const apiCallsCents = this.costService.calculateApiCost(api_calls?.used as number);
-
+        const apiCallsCents = this.costService.calculateApiCost(api_usage?.api_call_used as number);
+        console.log(`Api call Cost for tenant: ${tenant.id} with name: ${tenant.display_name}\n Cost : ${apiCallsCents}`);   
         return {
-            month: api_calls?.start_from as Date,
+            month: api_usage?.start_from as Date,
             apiCall:{
-                used: api_calls?.used as number,
-                limit: api_calls?.limit as number
+                used: api_usage?.api_call_used as number,
+                limit: api_usage?.api_call_limit as number
             },
             aiTokens:{
-                used: api_tokens?.used as number,
-                limit: api_tokens?.limit as number
+                input_token: api_usage?.input_tokens as number,
+                cached_input_tokens: api_usage?.cached_input_tokens as number,
+                output_tokens: api_usage?.output_tokens as number,
+                reasoning_tokens: api_usage?.reasoning_tokens as number,
+                total_used: api_usage?.total_tokens as number,
+                limit: api_usage?.token_limit as number
             },
             cost:{
                 apiCallsCents: apiCallsCents, 
@@ -170,19 +182,16 @@ export class MeterService{
     }
 
     async checkQuota(
-        input:{
-            tenant_id: UUID,
-            type: string,
-        }
+        tenant_id: UUID
     ): Promise<QuotaRow>{
-        const tenant = await this.tenantsRepo.findById(this.db, input.tenant_id);
+        const tenant = await this.tenantsRepo.findById(this.db, tenant_id);
         if(!tenant){
-            throw new NotFoundError(`Tenant by Id: ${input.tenant_id} was not found`)
+            throw new NotFoundError(`Tenant by Id: ${tenant_id} was not found`)
         }
 
-        const current_quota = await this.eventsRepo.getCurrentQuota(this.db, input.tenant_id, input.type);
+        const current_quota = await this.eventsRepo.getCurrentQuota(this.db, tenant_id);
         if(!current_quota){
-            throw new NotFoundError(`quota plan for user ${input.tenant_id} was not found`);
+            throw new NotFoundError(`quota plan for user ${tenant_id}enant_id} was not found`);
         }
         return current_quota!;
     }

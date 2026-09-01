@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import { response, type Request, type Response } from "express";
 import type { UUID } from "node:crypto";
 import { MeterService } from "../services/meter.service.ts";
 import { eventCreateSchema, checkQuotaSchema } from "../schemas";
@@ -39,34 +39,43 @@ export class MeterController{
             });
         }
     }
+    getUsage = async(
+        req: Request,
+        res: Response
+    ): Promise<Response> => {
+        if(!req.params.tenant_id){
+            return ControllerErrorHelper.handle("Missing tenant_id parameter", res, "MeterController.getUsage", {
+                body: req.body,
+                method: req.method,
+                path: req.originalUrl,
+            });
+        }
+        try {
+            const event = await this.meterService.getUsage(req.params.tenant_id as UUID);
+            return res.status(200).json(event);
+        } catch (err) {
+            return ControllerErrorHelper.handle(err, res, "MeterController.getUsage", {
+                body: req.body,
+                method: req.method,
+                path: req.originalUrl,
+            });
+        }
+    }
 
     getQuota = async(
         req: Request,
         res: Response
     ): Promise<Response> => {
-        
-        if(!req.query.type){
-            return ControllerErrorHelper.handle("Missing type parameter", res, "MeterController.getQuota", {
+        if(!req.params.tenant_id){
+            return ControllerErrorHelper.handle("Missing Tenant Id query parameter", res, "MeterController.getQuota", {
                 body: req.body,
                 method: req.method,
                 path: req.originalUrl,
             });
-        }
-        if(!req.query.tenant_id){
-            return ControllerErrorHelper.handle("Missing Tenant Id parameter", res, "MeterController.getQuota", {
-                body: req.body,
-                method: req.method,
-                path: req.originalUrl,
-            });
-        }
-
-        const input = {
-            type: req.query.type as string,
-            tenant_id: req.query.tenant_id as UUID
         };
 
         try {
-            const event = await this.meterService.checkQuota(input);
+            const event = await this.meterService.checkQuota(req.params.tenant_id as UUID);
             return res.status(200).json(event);
         } catch (err) {
             return ControllerErrorHelper.handle(err, res, "MeterController.getQuota", {

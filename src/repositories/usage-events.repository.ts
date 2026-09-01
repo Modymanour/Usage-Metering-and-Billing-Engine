@@ -19,14 +19,14 @@ export interface QuotaRow{
     subscription_id: UUID,
     plan_id: UUID,
     plan_name: string,
-    limit: number,
-    used: number,
+    api_call_limit: number,
+    api_call_used: number,
     input_tokens: number,
     cached_input_tokens: number,
     output_tokens: number,
     reasoning_tokens: number
     total_tokens: number,
-    event_type: string,
+    token_limit: number,
     start_from: Date,
     end_at: Date,
 }
@@ -156,7 +156,6 @@ export class UsageEventsRepository {
     async getCurrentQuota(
         db: Queryable,
         tenant_id: UUID,
-        event_type: string
     ): Promise<QuotaRow | undefined>{
         const quota = await queryOne<QuotaRow>(
             db,
@@ -165,32 +164,27 @@ export class UsageEventsRepository {
                 s.id AS subscription_id,
                 p.id AS plan_id,
                 p.plan_name,
-                CASE $2
-                    WHEN 'api_call' THEN p.api_call_limit
-                    WHEN 'api_token' THEN p.api_token_limit
-                END AS limit,
-                COALESCE(SUM(e.quantity), 0)::integer AS used,
+                p.api_call_limit as api_call_limit,
+                COALESCE(SUM(e.quantity), 0)::integer AS api_call_used,
                 COALESCE(SUM(e.input_tokens),0)::integer as input_tokens,
                 COALESCE(SUM(e.cached_input_tokens),0)::integer as cached_input_tokens,
                 COALESCE(SUM(e.output_tokens),0)::integer as output_tokens,
                 COALESCE(SUM(e.reasoning_tokens),0)::integer as reasoning_tokens,
                 (COALESCE(SUM(e.input_tokens), 0) + COALESCE(SUM(e.cached_input_tokens), 0) + COALESCE(SUM(e.output_tokens), 0) + COALESCE(SUM(e.reasoning_tokens), 0))
                 ::integer AS total_tokens,
-                $2 AS event_type,
+                p.api_token_limit as token_limit,
                 s.start_from AS start_from,
                 s.ends_at AS end_at
             FROM subscriptions s
             JOIN plans p ON p.id = s.plan_id
             LEFT JOIN user_events e
                 ON e.tenant_id = s.tenant_id
-                AND e.event_type = $2
                 AND e.created_at >= s.start_from
                 AND e.created_at < s.ends_at
             WHERE s.tenant_id = $1
                 AND s.sub_status = 'active'
                 AND NOW() >= s.start_from
                 AND NOW() < s.ends_at
-                AND $2 IN ('api_call', 'api_token')
             GROUP BY
                 s.tenant_id,
                 s.id,
@@ -202,7 +196,7 @@ export class UsageEventsRepository {
                 s.ends_at
             ORDER BY s.start_from DESC
             LIMIT 1`,
-            [tenant_id, event_type]
+            [tenant_id]
         );
 
         return quota;
@@ -211,18 +205,17 @@ export class UsageEventsRepository {
         db: Queryable,
         tenant_id: UUID,
     ): Promise<UsageSummaryRow | undefined>{
-        const api_tokens = await this.getCurrentQuota(db, tenant_id, "api_token")
-        const api_call = await this.getCurrentQuota(db, tenant_id, "api_call")
+        const api_usage = await this.getCurrentQuota(db, tenant_id)
 
         const api_call_usage = {
-            used: api_call?.used ?? 0,
-            limit: api_call?.limit ?? 0,
-            remaining: Math.max(0, (api_call?.limit ?? 0) - (api_call?.used ?? 0))
+            used: api_usage?.api_call_used ?? 0,
+            limit: api_usage?.api_call_limit ?? 0,
+            remaining: Math.max(0, (api_usage?.api_call_limit ?? 0) - (api_usage?.api_call_used ?? 0))
         };
         const api_tokens_usage = {
-            used: api_tokens?.used ?? 0,
-            limit: api_tokens?.limit ?? 0,
-            remaining: Math.max(0, (api_tokens?.limit ?? 0) - (api_tokens?.used ?? 0))
+            used: api_usage?.total_tokens ?? 0,
+            limit: api_usage?.token_limit ?? 0,
+            remaining: Math.max(0, (api_usage?.token_limit ?? 0) - (api_usage?.total_tokens ?? 0))
         }
         const usage = {
             apiCalls:api_call_usage,

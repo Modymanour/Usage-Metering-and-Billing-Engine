@@ -31,9 +31,12 @@ export class TenantsService {
         if(!customer){
             throw new ValidationError(`Stripe Customer couldn't be created for tenant: ${tenant.id} with email: ${input.email}`);
         }
-        await this.tenantsRepository.asignStripeId(this.db, tenant.id, customer.id)
+        const tenant_with_stripe = await this.tenantsRepository.asignStripeId(this.db, tenant.id, customer.id)
+        if(!tenant_with_stripe){
+            throw new ValidationError(`Couldn't link stripe with tenant for tenant: ${tenant.id} with email: ${input.email}`);
+        }
 
-        return tenant;
+        return tenant_with_stripe;
     }
 
     async update(
