@@ -35,14 +35,32 @@ test('tenant to subscription to usage to quota data flow', { skip: !connectionSt
         });
         assert.equal(createdSubscription.plan_id, plan.id);
 
-        const meter = new MeterService(tenants, subscriptions, events, db);
-        const recorded = await meter.recordUsage({ tenant_id: tenant.id, event_type: 'api_call', idempotency_key: 'integration-key', quantity: 4 });
+        const meter = new MeterService(tenants, subscriptions, events, undefined, db);
+        const recorded = await meter.recordUsage({
+            tenant_id: tenant.id,
+            event_type: 'api_call',
+            idempotency_key: 'integration-key',
+            quantity: 4,
+            input_tokens: null,
+            cached_input_tokens: null,
+            output_tokens: null,
+            reasoning_tokens: null,
+        });
         assert.equal(recorded.quantity, 4);
 
-        const quota = await meter.checkQuota({ tenant_id: tenant.id, type: 'api_call' });
-        assert.equal(quota.limit, 10);
-        assert.equal(quota.used, 4);
-        assert.equal((await meter.recordUsage({ tenant_id: tenant.id, event_type: 'api_call', idempotency_key: 'integration-key', quantity: 4 })).id, recorded.id);
+        const quota = await meter.checkQuota(tenant.id);
+        assert.equal(quota.api_call_limit, 10);
+        assert.equal(quota.api_call_used, 4);
+        assert.equal((await meter.recordUsage({
+            tenant_id: tenant.id,
+            event_type: 'api_call',
+            idempotency_key: 'integration-key',
+            quantity: 4,
+            input_tokens: null,
+            cached_input_tokens: null,
+            output_tokens: null,
+            reasoning_tokens: null,
+        })).id, recorded.id);
         assert.equal((await events.getUsageSummary(db, tenant.id))?.apiCalls.remaining, 6);
     } finally {
         await db.query('DELETE FROM tenants WHERE id = $1', [tenantId]);
