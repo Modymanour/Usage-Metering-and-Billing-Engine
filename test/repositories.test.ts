@@ -33,16 +33,21 @@ test('tenant, subscription, usage, and Stripe repositories pass parameters and r
 
     db.queue(row); await tenant.create(db, { name: 'Tenant', email: 'a@b.test', password: 'secret' });
     assert.deepEqual(lastCall(db).values, ['Tenant', 'a@b.test', 'secret']);
+
     db.queue(row); await subscriptions.findByTenantId(db, id);
     assert.match(lastCall(db).text, /s\.start_from/);
     assert.doesNotMatch(lastCall(db).text, /started_from/);
-    db.queue(row); await usage.create(db, { tenant_id: id, idempotency_key: 'key', event_type: 'api_call', quantity: 2 });
-    assert.deepEqual(lastCall(db).values, [id, 'key', 'api_call', 2]);
-    db.queue(row); await usage.getCurrentQuota(db, id, 'api_call');
+
+    db.queue(row); await usage.create(db, { tenant_id: id, idempotency_key: 'key', event_type: 'api_call', quantity: 2, input_tokens: null, cached_input_tokens: null, output_tokens: null, reasoning_tokens: null });
+    assert.deepEqual(lastCall(db).values, [id, 'key', 'api_call', 2, null, null, null, null]);
+
+    db.queue(row); await usage.getCurrentQuota(db, id);
     assert.match(lastCall(db).text, /AS start_from/);
     assert.match(lastCall(db).text, /AS end_at/);
-    db.queue(row); db.queue(row); await usage.getUsageSummary(db, id);
-    assert.deepEqual(db.calls.slice(-2).map((call) => call.values), [[id, 'api_token'], [id, 'api_call']]);
+
+    db.queue(row); await usage.getUsageSummary(db, id);
+    assert.deepEqual(lastCall(db).values, [id]);
+
     db.queue(row); await stripe.findByStripeId(db, 'evt_1');
     assert.deepEqual(lastCall(db).values, ['evt_1']);
 });

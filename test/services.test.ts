@@ -31,24 +31,24 @@ test('meter returns an existing idempotent event without checking quota', async 
     assert.equal(await service.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'key', quantity: 2 }), existing);
 });
 
-test('meter rejects invalid type, quantity, and quota overflow', async () => {
-    await assert.rejects(() => meter().recordUsage({ tenant_id: tenantId, event_type: 'other', idempotency_key: 'key', quantity: 1 }), ValidationError);
-    await assert.rejects(() => meter().recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'key', quantity: -1 }), ValidationError);
-    const full = meter({ eventsRepo: { getCurrentQuota: async () => ({ limit: 3, used: 2 }) } });
-    await assert.rejects(() => full.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'new', quantity: 2 }), TooManyRequests);
+test('meter rejects invalid type and quota overflow', async () => {
+    await assert.rejects(() => meter().recordUsage({ tenant_id: tenantId, event_type: 'other', idempotency_key: 'key', quantity: 1, input_tokens: null, cached_input_tokens: null, output_tokens: null, reasoning_tokens: null }), ValidationError);
+    await assert.rejects(() => meter().recordUsage({ tenant_id: tenantId, event_type: 'api_token', idempotency_key: 'key', quantity: null, input_tokens: null, cached_input_tokens: null, output_tokens: null, reasoning_tokens: null }), ValidationError);
+
+    const full = meter({ eventsRepo: { getCurrentQuota: async () => ({ tenant_id: tenantId, subscription_id: 'sub', plan_id: 'plan', plan_name: 'Free', api_call_limit: 3, api_call_used: 2, input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, reasoning_tokens: 0, total_tokens: 0, token_limit: 10, start_from: new Date(), end_at: new Date(Date.now() + 1000) }) } });
+    await assert.rejects(() => full.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'new', quantity: 2, input_tokens: null, cached_input_tokens: null, output_tokens: null, reasoning_tokens: null }), TooManyRequests);
 });
 
 test('meter reports missing tenant and subscription', async () => {
     const missingTenant = meter({ tenantsRepo: { findById: async () => undefined } });
-    await assert.rejects(() => missingTenant.checkQuota({ tenant_id: tenantId, type: 'api_call' }), NotFoundError);
+    await assert.rejects(() => missingTenant.checkQuota(tenantId), NotFoundError);
     const missingSubscription = meter({ subscriptionRepo: { findByTenantId: async () => undefined } });
-    await assert.rejects(() => missingSubscription.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'new', quantity: 1 }), NotFoundError);
+    await assert.rejects(() => missingSubscription.recordUsage({ tenant_id: tenantId, event_type: 'api_call', idempotency_key: 'new', quantity: 1, input_tokens: null, cached_input_tokens: null, output_tokens: null, reasoning_tokens: null }), NotFoundError);
 });
 
 test('tenant and subscription services validate input and map repository results', async () => {
     const tenantId = '00000000-0000-0000-0000-000000000000';
 
-    // Mock TenantsRepository methods used in TenantsService
     const mockTenantsRepo = {
         create: async (_db: unknown, input: { name: string; email: string; password: string }) => ({
             id: tenantId,
@@ -56,7 +56,13 @@ test('tenant and subscription services validate input and map repository results
             email: input.email,
             created_at: new Date()
         }),
-        asignStripeId: async (_db: unknown, _tenantId: string, _stripeId: string) => ({})
+        asignStripeId: async (_db: unknown, _tenantId: string, _stripeId: string) => ({
+            id: tenantId,
+            display_name: 'Acme',
+            email: 'a@b.test',
+            stripe_customer_id: _stripeId,
+            created_at: new Date()
+        })
     };
 
     const mockStripeService = {

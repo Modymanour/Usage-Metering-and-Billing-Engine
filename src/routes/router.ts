@@ -44,11 +44,13 @@ router.get("/subscription/:id", subscriptionController.getSubsciption);
 router.get("/subscription", subscriptionController.getAll)
 
 /* ========================================================================== */
-/* Metering                                                                       */
+/* Metering                                                                   */
 /* ========================================================================== */
 
 router.post("/generate", meterController.generate);
 
-router.get("/get-quota", meterController.getQuota);
+router.get("/usage/:tenant_id", meterController.getUsage);
+
+router.get("/get-quota/:tenant_id", meterController.getQuota);
 
 router.get("/user-events", meterController.getAll);

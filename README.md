@@ -4,7 +4,7 @@ A TypeScript/Express service backed by PostgreSQL for storing tenants, plans, su
 
 ## Current status
 
-The PostgreSQL schema, migrations, connection pool, and application bootstrap are in place. API routes, controllers, and services have not been implemented yet.
+Database, services, tests, routes and controllers are all done and running to intented uset; what is remaining: redis, middleware (authentication & authorization) and logging system. 
 
 ## Requirements
 
@@ -30,6 +30,7 @@ Install dependencies and run the service:
 npm install
 npm start
 ```
+Thought the service will return error since it needs postgres to be running.
 
 ## Database migrations
 
@@ -59,13 +60,14 @@ src/
 	routes/                   Express router
 	controllers/              Request handlers
 	services/                 Application services
-	schemas/				  Zod schema for the APIs
-	errors/					  Specified Errors for the system
+	schemas/		          Zod schema for the APIs
+	errors/          	      Specified Errors for the system
 ```
 
 ## Database Schema
 
-<img width="1502" height="772" alt="Usage-Metering-and-Billing-Engine ERD drawio" src="https://github.com/user-attachments/assets/16b84f11-9a84-488c-b44f-5145700d7c55" />
+<img width="1642" height="877" alt="Usage-Metering-and-Billing-Engine ERD drawio" src="https://github.com/user-attachments/assets/0074c933-730f-4110-8580-1d723dd34ddc" />
+
 
 
 ## API Reference
@@ -79,12 +81,13 @@ src/
 | **Tenant** | `GET` | `/tenant` | List all registered tenants (paginated) | **Query Params:**<br>`page`: `number` *(optional)*<br>`pageSize`: `number` *(optional)* |
 | **Subscription** | `POST` | `/subscription` | Create a new tenant subscription | **JSON Body:**<br>`tenant_id`: `uuid`<br>`plan_name`: `string`<br>`start_from`: `date-string` (ISO format)<br>`ends_at`: `date-string` (ISO format) |
 | **Subscription** | `PUT` | `/subscription/plan` | Upgrade/downgrade subscription plan | **JSON Body:**<br>`sub_id`: `uuid`<br>`new_plan_name`: `string` |
-| **Subscription** | `PUT` | `/subscription/status` | Change active status of a subscription | **JSON Body:**<br>`sub_id`: `uuid`<br>`new_state`: `"active"` \| `"cancelled"` \| `"expired"` |
+| **Subscription** | `PUT` | `/subscription/status` | Change active status of a subscription | **JSON Body:**<br>`sub_id`: `uuid`<br>`new_state`: `"active"` \| `trialing`\| `"cancelled"` \| `"expired"` |
 | **Subscription** | `DELETE` | `/subscription/:id` | Delete a subscription | **Path Param:**<br>`id`: `uuid` |
 | **Subscription** | `GET` | `/subscription/:id` | Get subscription details by ID | **Path Param:**<br>`id`: `uuid` |
 | **Subscription** | `GET` | `/subscription` | List all subscriptions (paginated) | **Query Params:**<br>`page`: `number` *(optional)*<br>`pageSize`: `number` *(optional)* |
 | **Metering** | `POST` | `/generate` | Record unit usage / meter event | **JSON Body:**<br>`tenant_id`: `uuid`<br>`idempotency_key`: `string`<br>`event_type`: `"api_call"` \| `"api_token"`<br>`quantity`: `integer` (min 1) |
-| **Metering** | `GET` | `/get-quota` | Check current tenant quota status | **Query / Body Params:**<br>`tenant_id`: `uuid`<br>`type`: `"api_call"` \| `"api_token"` |
+| **Metering** | `GET` | `/usage/:tenant_id` | Check current tenant usage status | **Query Params:**<br> `tenant_id`: `uuid`| 
+| **Metering** | `GET` | `/get-quota/:tenant_id` | Check current tenant quota status | **Query Params:**<br>`tenant_id`: uuid |
 | **Metering** | `GET` | `/user-events` | List all usage events (paginated) | **Query Params:**<br>`page`: `number` *(optional)*<br>`pageSize`: `number` *(optional)* |
 
 ## Tests
