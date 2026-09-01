@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS user_events (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     idempotency_key VARCHAR(255) NOT NULL,
     event_type      VARCHAR(50) NOT NULL CHECK (length(trim(event_type)) > 0),
-    quantity        INTEGER NOT NULL CHECK (quantity >= 0),
+    quantity        INTEGER CHECK (quantity >= 0),
     UNIQUE (tenant_id, idempotency_key)
 );
 

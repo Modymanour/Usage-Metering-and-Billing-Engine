@@ -8,11 +8,11 @@ export interface UsageEventRow {
     created_at: Date,
     idempotency_key: string,
     event_type: string,
-    quantity: number,
-    input_tokens: number,
-    cached_input_tokens: number,
-    output_tokens: number,
-    reasoning_tokens: number
+    quantity: number | null,
+    input_tokens: number | null,
+    cached_input_tokens: number | null,
+    output_tokens: number | null,
+    reasoning_tokens: number | null
 }
 export interface QuotaRow{
     tenant_id: UUID,
@@ -21,9 +21,14 @@ export interface QuotaRow{
     plan_name: string,
     limit: number,
     used: number,
+    input_tokens: number,
+    cached_input_tokens: number,
+    output_tokens: number,
+    reasoning_tokens: number
+    total_tokens: number,
     event_type: string,
     start_from: Date,
-    end_at: Date
+    end_at: Date,
 }
 
 interface UsageSummaryRow {
@@ -50,11 +55,11 @@ export class UsageEventsRepository {
             tenant_id: UUID,
             idempotency_key: string,
             event_type: string,
-            quantity: number,
-            input_tokens: number,
-            cached_input_tokens: number,
-            output_tokens: number,
-            reasoning_tokens: number
+            quantity: number | null,
+            input_tokens: number | null,
+            cached_input_tokens: number | null,
+            output_tokens: number | null,
+            reasoning_tokens: number | null
         }
     ): Promise<UsageEventRow> {
         const row = await queryOne<UsageEventRow>(
@@ -165,6 +170,12 @@ export class UsageEventsRepository {
                     WHEN 'api_token' THEN p.api_token_limit
                 END AS limit,
                 COALESCE(SUM(e.quantity), 0)::integer AS used,
+                COALESCE(SUM(e.input_tokens),0)::integer as input_tokens,
+                COALESCE(SUM(e.cached_input_tokens),0)::integer as cached_input_tokens,
+                COALESCE(SUM(e.output_tokens),0)::integer as output_tokens,
+                COALESCE(SUM(e.reasoning_tokens),0)::integer as reasoning_tokens,
+                (COALESCE(SUM(e.input_tokens), 0) + COALESCE(SUM(e.cached_input_tokens), 0) + COALESCE(SUM(e.output_tokens), 0) + COALESCE(SUM(e.reasoning_tokens), 0))
+                ::integer AS total_tokens,
                 $2 AS event_type,
                 s.start_from AS start_from,
                 s.ends_at AS end_at

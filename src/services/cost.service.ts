@@ -53,4 +53,8 @@ export class CostService {
             totalCostCents: totalCost
         };
     }
+
+    calculateApiCost(quantity: number): number{
+        return quantity * PRICING.apiCall.perCallCents;
+    }
 }

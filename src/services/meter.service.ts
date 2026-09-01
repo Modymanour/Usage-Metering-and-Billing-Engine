@@ -5,6 +5,8 @@ import { SubscriptionRepository, type SubscriptionRow } from '../repositories/su
 import { UsageEventsRepository, type UsageEventRow, type QuotaRow } from "../repositories/usage-events.repository.ts";
 import { NotFoundError, ValidationError, TooManyRequests, PaymentRequired } from "../errors/error.ts";
 import { PaginatedResult } from "../repositories/types.ts";
+import { CostService, CostBreakdown } from "./cost.service.ts";
+import { PRICING } from "../config/pricing.config.ts";
 
 
 export interface QuotaResult{
@@ -16,12 +18,30 @@ export interface QuotaResult{
     allowed: boolean
 }
 
+export interface CurrentUsage{
+    month: Date,
+    apiCall:{
+        used: number,
+        limit: number
+    },
+    aiTokens:{
+        used: number,
+        limit: number,
+    },
+    cost:{
+        apiCallsCents: number,
+        aiTokensCents: number,
+        totalCents: number
+    }
+}
+
 
 export class MeterService{
     constructor(
             private readonly tenantsRepo = new TenantsRepository(),
             private readonly subscriptionRepo = new SubscriptionRepository(),
             private readonly eventsRepo = new UsageEventsRepository(),
+            private readonly costService = new CostService(),
             private readonly db: Queryable = pool,
         ) {}
 
@@ -30,11 +50,11 @@ export class MeterService{
             tenant_id: UUID,
             event_type: string,
             idempotency_key: string,
-            quantity: number,
-            input_tokens: number,
-            cached_input_tokens: number,
-            output_tokens: number,
-            reasoning_tokens: number
+            quantity: number | null,
+            input_tokens: number | null,
+            cached_input_tokens: number | null,
+            output_tokens: number | null,
+            reasoning_tokens: number | null
         }
     ): Promise<UsageEventRow>{
         this.validateUsageInput(input);
@@ -60,38 +80,95 @@ export class MeterService{
             type: input.event_type
         })
 
-        if(quota.used + input.quantity > quota.limit){
-            throw new TooManyRequests(`Limit has been reached for this subscription`);
+        if(input.event_type === "api_call"){
+            if (input.quantity == null) {
+                throw new ValidationError('Quantity is required for api_call events');
+            }
+
+            if(quota.used + input.quantity > quota.limit){
+                throw new TooManyRequests(`Api Call Limit has been reached for this subscription`);
+            }
+    
+            const data = await this.eventsRepo.create(this.db,{
+                tenant_id: subscription.tenant_id,
+                event_type: input.event_type,
+                idempotency_key: input.idempotency_key,
+                quantity: input.quantity,
+                input_tokens: null,
+                cached_input_tokens: null,
+                output_tokens: null,
+                reasoning_tokens: null
+            });
+    
+            if(!data){
+                throw new Error("Error while saving new event usage");
+            }
+            return data;
+        }
+        else{
+            if(input.cached_input_tokens == null || input.reasoning_tokens == null || input.input_tokens == null || input.output_tokens == null){
+                throw new ValidationError('Token values are required for api_token events');
+            }
+            if(input.cached_input_tokens + input.reasoning_tokens + input.input_tokens + input.output_tokens + quota.total_tokens > quota.limit){
+                throw new TooManyRequests(`Token Limit has been reached for this subscription`);
+            }
+    
+            const data = await this.eventsRepo.create(this.db,{
+                tenant_id: subscription.tenant_id,
+                event_type: input.event_type,
+                idempotency_key: input.idempotency_key,
+                quantity: null,
+                input_tokens: input.input_tokens,
+                cached_input_tokens: input.cached_input_tokens,
+                output_tokens: input.output_tokens,
+                reasoning_tokens: input.reasoning_tokens
+            });
+    
+            if(!data){
+                throw new Error("Error while saving new event usage");
+            }
+            return data;
         }
 
-        const data = await this.eventsRepo.create(this.db, {
-            tenant_id: input.tenant_id,
-            idempotency_key: input.idempotency_key,
-            event_type: input.event_type,
-            quantity: input.quantity,
-            input_tokens: input.input_tokens,
-            cached_input_tokens: input.cached_input_tokens,
-            output_tokens: input.output_tokens,
-            reasoning_tokens: input.reasoning_tokens
+    }
+    async getUsage(
+        tenant_id: UUID
+    ): Promise<CurrentUsage>{
+        const tenant = await this.tenantsRepo.findById(this.db, tenant_id);
+        if(!tenant){
+            throw new NotFoundError(`Tenant by Id: ${tenant_id} was not found`)
+        }
+
+        const api_calls = await this.eventsRepo.getCurrentQuota(this.db, tenant_id, "api_call");
+        const api_tokens = await this.eventsRepo.getCurrentQuota(this.db, tenant_id, "api_tokens");
+
+        const tokensCost = this.costService.calculateAICost({
+            inputTokens: api_tokens?.input_tokens as number,
+            cachedInputTokens: api_tokens?.cached_input_tokens as number,
+            outputTokens: api_tokens?.output_tokens as number,
+            reasoningTokens: api_tokens?.reasoning_tokens as number
         });
 
-        if(!data){
-            throw new Error("Error while saving new event usage");
-        }
-        return data;
+        const apiCallsCents = this.costService.calculateApiCost(api_calls?.used as number);
+
+        return {
+            month: api_calls?.start_from as Date,
+            apiCall:{
+                used: api_calls?.used as number,
+                limit: api_calls?.limit as number
+            },
+            aiTokens:{
+                used: api_tokens?.used as number,
+                limit: api_tokens?.limit as number
+            },
+            cost:{
+                apiCallsCents: apiCallsCents, 
+                aiTokensCents: tokensCost.totalCostCents,
+                totalCents: tokensCost.totalCostCents + apiCallsCents
+            }
+        };
     }
 
-    private validateUsageInput(input: { event_type: string; idempotency_key: string; quantity: number }): void {
-        if (input.event_type !== 'api_call' && input.event_type !== 'api_token') {
-            throw new ValidationError('Event type must be api_call or api_token');
-        }
-        if (!input.idempotency_key?.trim()) {
-            throw new ValidationError('Idempotency key is required');
-        }
-        if (!Number.isInteger(input.quantity) || input.quantity < 0) {
-            throw new ValidationError('Usage quantity must be a non-negative integer');
-        }
-    }
     async checkQuota(
         input:{
             tenant_id: UUID,
@@ -109,7 +186,7 @@ export class MeterService{
         }
         return current_quota!;
     }
-
+    
     async getSubscriptionPlan(
         tenant_id: UUID
     ): Promise<SubscriptionRow | undefined>{
@@ -117,10 +194,10 @@ export class MeterService{
         if(!tenant){
             throw new NotFoundError(`Tenant by Id: ${tenant_id} was not found`)
         }
-
+        
         return await this.subscriptionRepo.findByTenantId(this.db, tenant_id);
     }
-
+    
     async findExistingUsage(
         input:{
             tenant_id: UUID,
@@ -134,12 +211,22 @@ export class MeterService{
 
         return await this.eventsRepo.findByIdempotencyKey(this.db, input.tenant_id, input.idempotency_Key);
     }
+
     async getAll(
         page: number,
         pageNumber: number
     ): Promise<PaginatedResult<UsageEventRow>>{
         const tenants = await this.eventsRepo.getAll(this.db, page, pageNumber);
         return tenants
+    }
+
+    private validateUsageInput(input: { event_type: string; idempotency_key: string;}): void {
+        if (input.event_type !== 'api_call' && input.event_type !== 'api_token') {
+            throw new ValidationError('Event type must be api_call or api_token');
+        }
+        if (!input.idempotency_key?.trim()) {
+            throw new ValidationError('Idempotency key is required');
+        }
     }
     
 }
