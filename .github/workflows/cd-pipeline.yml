@@ -37,7 +37,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 2222
           source: docker-compose.yml
-          target: /billing-engine/
+          target: /home/mody/billing-engine/
 
       - name: Pull and restart services
         uses: appleboy/ssh-action@v1.0.0
@@ -47,5 +47,5 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 2222
           script: |
-            cd /billing-engine
+            cd /home/mody/billing-engine
             docker compose --env-file .env up -d --remove-orphans
