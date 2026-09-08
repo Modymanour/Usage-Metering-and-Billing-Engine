@@ -35,7 +35,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
-          #port: 2222
+          port: 2222
           source: docker-compose.yml
           target: /billing-engine/
 
@@ -45,7 +45,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
-          #port: 2222
+          port: 2222
           script: |
             cd /billing-engine
             docker compose --env-file .env up -d --remove-orphans
