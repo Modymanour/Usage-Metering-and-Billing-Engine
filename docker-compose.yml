@@ -1,11 +1,11 @@
 services:
   db:
-    image: postgres:latest
+    image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: dev
-      POSTGRES_DB: BillingEngine
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -17,11 +17,14 @@ services:
       retries: 10
 
   api:
-    build: .
+    image: modymansour/usage-billing:latest
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      POSTGRESQL_CONNECTION_STRING: postgres://postgres:dev@db:5432/BillingEngine
+      POSTGRESQL_CONNECTION_STRING: ${POSTGRESQL_CONNECTION_STRING}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
     depends_on:
       db:
         condition: service_healthy
