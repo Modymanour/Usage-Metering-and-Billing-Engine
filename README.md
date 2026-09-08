@@ -15,9 +15,10 @@ Database, services, tests, routes and controllers are all done and running to in
 - Stripe
 
 ## Run with Docker Compose
+when running docker compose, you will need to push the env file with the run command
 
 ```bash
-docker compose up --build
+docker compose --env-file (wherever the file is) up 
 ```
 
 The API container listens on `http://localhost:3000`. PostgreSQL is exposed on port `5432` with these development credentials:
