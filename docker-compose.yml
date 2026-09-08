@@ -17,8 +17,12 @@ services:
       retries: 10
 
   api:
+<<<<<<< HEAD
     image: modymansour/usage-billing:latest
     restart: unless-stopped
+=======
+    build: modymansour/usage-billing
+>>>>>>> 76dcac2ea7a7b1cb03e25ac02f6f7c0b57a71f8c
     ports:
       - "3000:3000"
     environment:
