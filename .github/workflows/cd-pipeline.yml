@@ -32,20 +32,20 @@ jobs:
       - name: Copy Compose file
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 2222
           source: docker-compose.yml
-          target: /billing-engine/
+          target: /home/mody/billing-engine/
 
       - name: Pull and restart services
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 2222
           script: |
-            cd /billing-engine
-            docker compose pull api
-            docker compose up -d --remove-orphans
-            docker image prune -f
+            cd /home/mody/billing-engine
+            docker compose --env-file .env up
