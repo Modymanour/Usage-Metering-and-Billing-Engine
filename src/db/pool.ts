@@ -32,6 +32,8 @@ if (!connectionString) {
     throw new Error('POSTGRESQL_CONNECTION_STRING is not configured');
 }
 
+console.log(`Connecting to postgres using connection string: ${connectionString}`);
+
 export const pool = new Pool({
     connectionString,
     application_name: 'billing-engine',
@@ -39,6 +41,9 @@ export const pool = new Pool({
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 5_000
 });
+
+console.log(`Connection using\nconnection string:${connectionString}\napplication_name: billing-engine\nmax: 10\n
+    idleTimeoutMillis:30_000\nconnectionTImeoutMillis:5_000\ncompleted successfully`);
 
 pool.on('error', (error) => {
     console.error('Unexpected PostgreSQL pool error', error);

@@ -22,5 +22,6 @@ app.listen(
     PORT,
     () => {
         console.log(`server is running on Port : ${PORT}`);
+        console.log(`swagger can be accessed on: https://mody.myddns.me/docs`)
     }
 );
