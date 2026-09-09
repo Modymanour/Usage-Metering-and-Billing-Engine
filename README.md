@@ -23,6 +23,8 @@ docker compose --env-file (wherever the file is) up
 
 The API container listens on `http://localhost:3000`. PostgreSQL is exposed on port `5432` with these development credentials:
 
+Interactive API documentation is available at `http://localhost:3000/docs`, and the OpenAPI document is served at `http://localhost:3000/openapi.json`.
+
 The API runs pending migrations before starting.
 
 Install dependencies and run the service:

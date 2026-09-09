@@ -17,6 +17,7 @@ services:
       retries: 10
 
   api:
+    build: .
     image: modymansour/usage-billing
     restart: unless-stopped
     ports:

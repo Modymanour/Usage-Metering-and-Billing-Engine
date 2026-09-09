@@ -13,44 +13,44 @@ const meterController = new MeterController();
 /* ========================================================================== */
 /* Auth                                                                       */
 /* ========================================================================== */
-router.post("billing-metering/auth/sign-up", tenantController.createTenant);
+router.post("/billing-metering/auth/sign-up", tenantController.createTenant);
 
 /* ========================================================================== */
 /* Tenant                                                                     */
 /* ========================================================================== */
 
-router.put("billing-metering/tenant", tenantController.updateTenant);
+router.put("/billing-metering/tenant", tenantController.updateTenant);
 
-router.delete("billing-metering/tenant/:id", tenantController.removeTenant);
+router.delete("/billing-metering/tenant/:id", tenantController.removeTenant);
 
-router.get("billing-metering/tenant/:id", tenantController.findTenant);
+router.get("/billing-metering/tenant/:id", tenantController.findTenant);
 
-router.get("billing-metering/tenant", tenantController.getAll);
+router.get("/billing-metering/tenant", tenantController.getAll);
 
 /* ========================================================================== */
 /* Subscription                                                               */
 /* ========================================================================== */
 
-router.post("billing-metering/subscription", subscriptionController.createSubscription);
+router.post("/billing-metering/subscription", subscriptionController.createSubscription);
 
-router.put("billing-metering/subscription/plan", subscriptionController.updateSubscriptionPlan);
+router.put("/billing-metering/subscription/plan", subscriptionController.updateSubscriptionPlan);
 
-router.put("billing-metering/subscription/status", subscriptionController.changeSubsciptionStatus);
+router.put("/billing-metering/subscription/status", subscriptionController.changeSubsciptionStatus);
 
-router.delete("billing-metering/subscription/:id", subscriptionController.deleteSubscription);
+router.delete("/billing-metering/subscription/:id", subscriptionController.deleteSubscription);
 
-router.get("billing-metering/subscription/:id", subscriptionController.getSubsciption);
+router.get("/billing-metering/subscription/:id", subscriptionController.getSubsciption);
 
-router.get("billing-metering/subscription", subscriptionController.getAll)
+router.get("/billing-metering/subscription", subscriptionController.getAll)
 
 /* ========================================================================== */
 /* Metering                                                                   */
 /* ========================================================================== */
 
-router.post("billing-metering/generate", meterController.generate);
+router.post("/billing-metering/generate", meterController.generate);
 
-router.get("billing-metering/usage/:tenant_id", meterController.getUsage);
+router.get("/billing-metering/usage/:tenant_id", meterController.getUsage);
 
-router.get("billing-metering/get-quota/:tenant_id", meterController.getQuota);
+router.get("/billing-metering/get-quota/:tenant_id", meterController.getQuota);
 
-router.get("billing-metering/user-events", meterController.getAll);
+router.get("/billing-metering/user-events", meterController.getAll);
