@@ -48,4 +48,5 @@ jobs:
           port: 2222
           script: |
             cd /home/mody/billing-engine
-            docker compose --env-file .env up
+            docker compose --env-file .env pull api
+            docker compose --env-file .env up -d --remove-orphans
